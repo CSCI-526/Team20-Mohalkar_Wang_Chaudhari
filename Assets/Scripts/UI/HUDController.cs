@@ -3,42 +3,29 @@ using UnityEngine.UI;
 
 namespace Lockdown {
 
-/// <summary>Plan v2 section 11. Pure iconography, no labels. Hearts and arrows are
-/// deliberately different resources and will visibly desync - that is intended.</summary>
+/// <summary>
+/// Plan v2 section 11. Pure iconography, no labels.
+///
+/// Direction state is NOT shown here - the coloured fins on the ship carry it, and that is
+/// where the player is already looking. Whether a lost direction is recoverable is told by
+/// whether its orb is on the field, which is more direct than a greyed-out arrow.
+/// </summary>
 public class HUDController : MonoBehaviour {
-    public Text[] arrows = new Text[4];   // Up, Down, Left, Right
     public Text hearts, timer, banner;
 
-    static readonly Color Lost      = new(0.5f, 0.5f, 0.5f, 0.6f);
-    static readonly Color Permanent = new(0.28f, 0.28f, 0.28f, 0.9f);
-
     void OnEnable() {
-        if (DirectionSystem.I != null) {
-            DirectionSystem.I.OnLost      += Refresh;
-            DirectionSystem.I.OnRestored  += Refresh;
-            DirectionSystem.I.OnPermanent += Refresh;
-        }
         if (LevelManager.I != null) LevelManager.I.OnStateChanged += ShowBanner;
         var hp = Object.FindFirstObjectByType<PlayerHealth>();
         if (hp != null) hp.OnHeartsChanged += SetHearts;
     }
 
-    void Start() { for (int i = 0; i < 4; i++) Refresh((Direction)i); if (banner != null) banner.text = ""; }
+    void Start() { if (banner != null) banner.text = ""; }
 
     void Update() {
         if (timer == null || LevelManager.I == null) return;
         float r = LevelManager.I.Remaining;
         timer.text = $"{Mathf.FloorToInt(r / 60f)}:{Mathf.FloorToInt(r % 60f):00}";
         timer.color = r < 10f ? Color.red : Color.white;
-    }
-
-    void Refresh(Direction d) {
-        int i = (int)d;
-        if (arrows == null || i < 0 || i >= arrows.Length || arrows[i] == null) return;
-        var ds = DirectionSystem.I;
-        arrows[i].color = ds.IsActive(d)    ? OrbSpawner.OrbColors[i]
-                        : ds.IsPermanent(d) ? Permanent
-                                            : Lost;
     }
 
     void SetHearts(int n) {
