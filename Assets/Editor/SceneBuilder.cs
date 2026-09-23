@@ -140,7 +140,10 @@ public static class SceneBuilder {
     static PlayerController BuildPlayer(Bullet playerBullet) {
         var go = new GameObject("Player") { layer = L("Player") };
         go.transform.position = new Vector3(0, 4, 0);
-        go.transform.localScale = Vector3.one * 0.8f;
+        // Body size. Everything on the player - fins, aim dot, collider - is a child or a
+        // local radius, so they all scale from this one number. Tune here, not in six places.
+        const float PS = 0.6f;
+        go.transform.localScale = Vector3.one * PS;
 
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = SpriteFactory.Load("square");
@@ -154,7 +157,7 @@ public static class SceneBuilder {
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
-        go.AddComponent<CircleCollider2D>().radius = 0.5f;   // 0.4 world at scale 0.8
+        go.AddComponent<CircleCollider2D>().radius = 0.5f;   // 0.3 world radius at scale 0.6
 
         var fins = new SpriteRenderer[4];
         Vector2[] finPos = { new(0, 0.55f), new(0, -0.55f), new(-0.55f, 0), new(0.55f, 0) };
@@ -168,7 +171,10 @@ public static class SceneBuilder {
 
         var dot = Quad("AimDot", Vector2.zero, Vector2.one * 0.19f, new Color(0.2f, 0.87f, 1f), 12);
         dot.GetComponent<SpriteRenderer>().sprite = SpriteFactory.Load("circle");
-        dot.transform.SetParent(go.transform);
+        // worldPositionStays:false is load-bearing. Quad() creates this at world origin, and
+        // the default SetParent PRESERVES world position - which left the aim dot sitting at
+        // (0,0) in the middle of the arena instead of on the player.
+        dot.transform.SetParent(go.transform, false);
 
         var fire = new GameObject("FirePoint");
         fire.transform.SetParent(go.transform);
@@ -206,7 +212,7 @@ public static class SceneBuilder {
 
             var core = Quad("Core", Vector2.zero, Vector2.one * 0.25f, new Color(1f, 0.53f, 0.33f), 8);
             core.GetComponent<SpriteRenderer>().sprite = SpriteFactory.Load("circle");
-            core.transform.SetParent(go.transform);
+            core.transform.SetParent(go.transform, false);   // see AimDot: keep local (0,0)
 
             var t = go.AddComponent<Turret>();
             t.bulletPrefab = enemyBullet;
