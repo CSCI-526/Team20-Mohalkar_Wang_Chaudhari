@@ -297,8 +297,64 @@ public static class SceneBuilder {
         hud.timer  = Label(canvas.transform, "Timer", "1:00", hudSize,
                            new Vector2(0, 1), new Vector2(hudX, hudY),
                            TextAnchor.UpperLeft, Color.white, new Vector2(0, 1));
+        // Full-screen dim, created BEFORE the banner and button so it renders behind them -
+        // in Unity UI, draw order follows sibling index. It sits in front of the hearts and
+        // timer on purpose, so the whole play screen dims uniformly.
+        hud.gameOverOverlay = Overlay(canvas.transform);
+        hud.gameOverOverlay.gameObject.SetActive(false);
+
+        // Banner sits slightly above centre so the restart button can sit under it without
+        // either drifting off the middle of the screen.
         hud.banner = Label(canvas.transform, "Banner", "", 120,
-                           new Vector2(0.5f, 0.5f), Vector2.zero, TextAnchor.MiddleCenter, Color.white);
+                           new Vector2(0.5f, 0.5f), new Vector2(0, 90),
+                           TextAnchor.MiddleCenter, Color.white);
+
+        hud.restartButton = RestartButton(canvas.transform);
+        hud.restartButton.gameObject.SetActive(false);   // only shown once the run ends
+    }
+
+    /// <summary>Full-screen dim behind the end-of-run banner and button.</summary>
+    static Image Overlay(Transform parent) {
+        var go = new GameObject("GameOverOverlay", typeof(Image));
+        go.transform.SetParent(parent, false);
+
+        var img = go.GetComponent<Image>();
+        img.color = new Color(0f, 0f, 0f, 0.72f);
+        img.raycastTarget = true;        // swallow clicks on the frozen arena underneath
+
+        var rt = img.rectTransform;      // stretch to fill whatever the screen is
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+        return img;
+    }
+
+    /// <summary>Centred RESTART button, hidden during play and revealed on win or death.</summary>
+    static Button RestartButton(Transform parent) {
+        var go = new GameObject("RestartButton", typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+
+        var img = go.GetComponent<Image>();
+        img.color = new Color(1f, 1f, 1f, 0.12f);
+
+        var rt = img.rectTransform;
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = new Vector2(0, -60);
+        rt.sizeDelta = new Vector2(340, 96);
+
+        var label = Label(go.transform, "Label", "RESTART", 44,
+                          new Vector2(0.5f, 0.5f), Vector2.zero, TextAnchor.MiddleCenter, Color.white);
+        label.rectTransform.sizeDelta = new Vector2(340, 96);
+        label.raycastTarget = false;                     // clicks belong to the button
+
+        var btn = go.GetComponent<Button>();
+        var colors = btn.colors;
+        colors.normalColor      = new Color(1f, 1f, 1f, 0.12f);
+        colors.highlightedColor = new Color(1f, 1f, 1f, 0.28f);
+        colors.pressedColor     = new Color(1f, 1f, 1f, 0.45f);
+        btn.colors = colors;
+        return btn;
     }
 
     static Text Label(Transform parent, string name, string text, int size,
