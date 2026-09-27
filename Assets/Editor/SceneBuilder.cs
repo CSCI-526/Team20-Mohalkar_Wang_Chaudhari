@@ -201,6 +201,7 @@ public static class SceneBuilder {
             t.barrelTip = tip.transform;
             t.core      = core.GetComponent<SpriteRenderer>();
             t.body      = go.GetComponent<SpriteRenderer>();
+            t.firePhase = i * 0.45f;   // stagger so turrets do not volley together
         }
     }
 

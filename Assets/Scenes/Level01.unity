@@ -266,6 +266,7 @@ MonoBehaviour:
   range: 15
   telegraph: 0.5
   spawnProtection: 1
+  firePhase: 0
 --- !u!61 &46665575
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -709,6 +710,7 @@ MonoBehaviour:
   range: 15
   telegraph: 0.5
   spawnProtection: 1
+  firePhase: 0.45
 --- !u!61 &131479818
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -900,6 +902,7 @@ MonoBehaviour:
   range: 15
   telegraph: 0.5
   spawnProtection: 1
+  firePhase: 0.9
 --- !u!61 &241324018
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2284,6 +2287,7 @@ MonoBehaviour:
   range: 15
   telegraph: 0.5
   spawnProtection: 1
+  firePhase: 1.35
 --- !u!61 &953608317
 BoxCollider2D:
   m_ObjectHideFlags: 0

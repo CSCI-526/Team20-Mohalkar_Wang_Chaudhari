@@ -13,6 +13,7 @@ public class Turret : MonoBehaviour {
     public float range = 15f;            // fire range
     public float telegraph = 0.5f;       // glow time before the shot (dodge window)
     public float spawnProtection = 1.0f; // invulnerable time after respawn
+    public float firePhase = 0f;         // extra gap so turrets do not all fire at once
 
     float _fireAt = -1f;    // >0 while telegraphing; fires at that time
     float _nextAimAt = 0f;  // next time we try to aim at the player
@@ -24,6 +25,11 @@ public class Turret : MonoBehaviour {
     PlayerController _player;
 
     void Awake() { _col = GetComponent<Collider2D>(); }
+
+    void Start() {
+        // Stagger the first shot with the other turrets
+        _nextAimAt = Time.time + firePhase;
+    }
 
     void Update() {
         if (LevelManager.I == null || LevelManager.I.Frozen) return;
@@ -79,7 +85,7 @@ public class Turret : MonoBehaviour {
 
     void Fire() {
         _fireAt = -1f;
-        _nextAimAt = Time.time + LevelManager.I.TurretFireGap;
+        _nextAimAt = Time.time + LevelManager.I.TurretFireGap + firePhase;
         if (core != null) core.color = new Color(1f, 0.53f, 0.33f);
         if (bulletPrefab == null) return;
 
@@ -118,7 +124,7 @@ public class Turret : MonoBehaviour {
     void Respawn() {
         _alive = true;
         _safeUntil = Time.time + spawnProtection;
-        _nextAimAt = Time.time;
+        _nextAimAt = Time.time + firePhase;
         SetVisible(true);
     }
 
