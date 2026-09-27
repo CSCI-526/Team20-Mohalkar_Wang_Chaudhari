@@ -38,12 +38,14 @@ public class PlayerController : MonoBehaviour {
     public static Vector2? TestInput;
 
     Rigidbody2D _rb;
-    Vector2 _lastVelocity;
+    Vector2 _lastVelocity, _lastInput;
+    // Keys already held when the bounce started. Holding them doesn't cancel the bounce;
+    // pressing anything else does - see PressedNewKey.
+    Vector2 _heldAtBounce;
     Crawler _crawler;
 
     // Per-axis bounce: +1/-1 = being carried that way along x (or y), 0 = not bouncing on
-    // that axis. Per axis so a corner hit bounces on both at once, and so the OTHER axis
-    // stays under the player's control (steer sideways to dodge while being carried).
+    // that axis. Per axis so a corner hit bounces on both at once.
     int _bx, _by;
     float _bsx, _bsy;
     float _bounceReadyAt = -1f;
@@ -111,6 +113,12 @@ public class PlayerController : MonoBehaviour {
         input = Vector2.ClampMagnitude(input, 1f);
 
         Vector2 v = input * speed;
+        _lastInput = input;
+
+        // Any new key press hands control straight back - a bounce you can't break out of
+        // carries you into bullets you saw coming.
+        if (Bouncing && PressedNewKey(input, ref _heldAtBounce)) EndBounce();
+
         // Applied AFTER the direction lock on purpose: a lost key stops the player choosing
         // that way, it doesn't stop the wall throwing them that way.
         if (Bouncing) v = BounceStep(v);
@@ -129,10 +137,15 @@ public class PlayerController : MonoBehaviour {
         }
         if (!Bouncing && Time.time < _bounceReadyAt) return;
 
+        bool wasBouncing = Bouncing;
         Vector2 n = InwardNormal(c);
         bool started = TryStartAxis(ref _bx, ref _bsx, n.x, _lastVelocity.x)
                      | TryStartAxis(ref _by, ref _bsy, n.y, _lastVelocity.y);
-        if (started) BounceCount++;
+        if (!started) return;
+        BounceCount++;
+        // A corner's second wall joins the running bounce; only a fresh bounce resets
+        // which keys count as "already held".
+        if (!wasBouncing) _heldAtBounce = _lastInput;
     }
 
     /// <summary>Starts a bounce on one axis if this wall faces along it and the player was
@@ -148,9 +161,23 @@ public class PlayerController : MonoBehaviour {
     }
 
     /// <summary>
+    /// True if the player pressed a key that wasn't held when the bounce started. Letting go
+    /// isn't a new press - the bounce carries on - but a released key stops counting as held,
+    /// so pressing it again is. Signs only: a held D is the same key at any magnitude.
+    /// </summary>
+    public static bool PressedNewKey(Vector2 input, ref Vector2 held) {
+        int ix = Sign(input.x), iy = Sign(input.y);
+        if (ix == 0) held.x = 0f;
+        if (iy == 0) held.y = 0f;
+        return (ix != 0 && ix != Sign(held.x)) || (iy != 0 && iy != Sign(held.y));
+    }
+
+    static int Sign(float f) => f > 0.01f ? 1 : f < -0.01f ? -1 : 0;
+
+    /// <summary>
     /// One physics step of an active bounce. Each bouncing axis is driven toward the centre
-    /// line (or the crawler stop point), easing out over the last stretch; input on that axis
-    /// is ignored. The other axis keeps the player's input.
+    /// line (or the crawler stop point), easing out over the last stretch; a key still held
+    /// from before the bounce is overridden on that axis. The other axis keeps the input.
     /// </summary>
     Vector2 BounceStep(Vector2 v) {
         Vector2 pos = _rb.position;
@@ -175,7 +202,8 @@ public class PlayerController : MonoBehaviour {
         }
         if (!Bouncing) _bounceReadyAt = Time.time + bounceCooldown;
 
-        // Steering sideways shares the budget with the bounce rather than adding to it.
+        // A key held from before (e.g. W while sliding up the wall) shares the budget with
+        // the bounce rather than adding to it.
         return Vector2.ClampMagnitude(v, Mathf.Max(speed, _bsx, _bsy));
     }
 

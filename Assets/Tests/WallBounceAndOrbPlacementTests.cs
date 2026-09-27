@@ -19,6 +19,20 @@ public class WallBounceAndOrbPlacementTests {
     }
 
     [Test]
+    public void OnlyANewKeyPressCancelsTheBounce() {
+        Vector2 held = Vector2.right;                        // hit the right wall holding D
+        Assert.IsFalse(PlayerController.PressedNewKey(Vector2.right, ref held), "still holding D");
+        Assert.IsTrue (PlayerController.PressedNewKey(new Vector2(1, 1), ref held), "W is new");
+
+        held = Vector2.right;
+        Assert.IsTrue(PlayerController.PressedNewKey(Vector2.left, ref held), "A is new");
+
+        held = Vector2.right;
+        Assert.IsFalse(PlayerController.PressedNewKey(Vector2.zero, ref held), "letting go isn't a press");
+        Assert.IsTrue (PlayerController.PressedNewKey(Vector2.right, ref held), "D again is a new choice");
+    }
+
+    [Test]
     public void SideWallBounceStopsShortOfTheCrawler() {
         // Right wall at mid-height, heading for the centre: crawler path ends at x = 3,
         // so with 1.5 clearance the bounce must stop at about x = 4.5.

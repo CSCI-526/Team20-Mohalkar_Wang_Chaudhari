@@ -117,19 +117,41 @@ public class Level01PlayTests {
         Assert.Less(minX, 0.5f, "thrown left across the arena although Left is lost");
     }
 
-    [UnityTest]
-    public IEnumerator CanSteerSidewaysWhileBouncing() {
+    IEnumerator BounceOffRightWall() {
         QuietArena();
         Place(new Vector2(8.5f, 3f));
         yield return new WaitForFixedUpdate();
         PlayerController.TestInput = Vector2.right;
         while (_pc.BounceCount == 0) yield return new WaitForFixedUpdate();
+        for (int i = 0; i < 5; i++) yield return new WaitForFixedUpdate();   // well under way
+        Assert.IsTrue(_pc.Bouncing);
+    }
 
-        float y0 = _rb.position.y, x0 = _rb.position.x;
-        yield return Hold(Vector2.up, 0.4f, (p, v) => { });
-        Assert.IsTrue(_pc.Bouncing, "still being carried");
-        Assert.Greater(_rb.position.y, y0 + 0.5f, "moved up while bouncing");
-        Assert.Less(_rb.position.x, x0 - 0.5f, "and kept travelling back toward centre");
+    [UnityTest]
+    public IEnumerator PressingANewKeyTakesControlBackMidBounce() {
+        yield return BounceOffRightWall();
+
+        // Bullet incoming - dodge down. D is still held; S is the new key.
+        PlayerController.TestInput = new Vector2(1f, -1f);
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+        Assert.IsFalse(_pc.Bouncing, "a new key ends the bounce");
+        Vector2 v = _rb.linearVelocity;
+        Assert.Greater(v.x, 3f, "moving the way the player chose (right)...");
+        Assert.Less(v.y, -3f, "...and down, at normal speed");
+    }
+
+    [UnityTest]
+    public IEnumerator ReversingMidBounceStopsTheBounce() {
+        yield return BounceOffRightWall();
+        PlayerController.TestInput = Vector2.zero;           // let go of D: bounce carries on
+        yield return new WaitForFixedUpdate();
+        Assert.IsTrue(_pc.Bouncing, "letting go doesn't cancel");
+        PlayerController.TestInput = Vector2.right;          // press D again: a new choice
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+        Assert.IsFalse(_pc.Bouncing);
+        Assert.Greater(_rb.linearVelocity.x, 4.9f, "heading back right at full speed");
     }
 
     [UnityTest]
