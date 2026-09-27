@@ -21,6 +21,7 @@ public class Turret : MonoBehaviour {
     Vector2 _aim;           // fire direction (locked when telegraph starts)
     bool _alive = true;
     Collider2D _col;
+    PlayerController _player;
 
     void Awake() { _col = GetComponent<Collider2D>(); }
 
@@ -33,8 +34,9 @@ public class Turret : MonoBehaviour {
             return;
         }
 
-        // Telegraphing: core turns white, then fire
+        // Telegraphing: barrel stays locked, core turns white, then fire
         if (_fireAt > 0f) {
+            if (barrel != null) barrel.right = _aim;
             float t = 1f - Mathf.Max(0f, (_fireAt - Time.time) / telegraph);
             if (core != null)
                 core.color = Color.Lerp(new Color(1f, 0.53f, 0.33f), Color.white, t);
@@ -42,20 +44,35 @@ public class Turret : MonoBehaviour {
             return;
         }
 
+        // Not locked: barrel tracks the player
+        TrackBarrel();
+
         // Idle: try to aim when ready
         if (Time.time >= _nextAimAt) TryAim();
     }
 
-    void TryAim() {
-        PlayerController player = FindFirstObjectByType<PlayerController>();
-        if (player == null) return;
+    // Keep the barrel pointed at the player
+    void TrackBarrel() {
+        if (barrel == null) return;
+        if (_player == null) _player = FindFirstObjectByType<PlayerController>();
+        if (_player == null) return;
 
-        Vector2 to = (Vector2)player.transform.position - (Vector2)transform.position;
+        Vector2 to = (Vector2)_player.transform.position - (Vector2)transform.position;
+        if (to.sqrMagnitude < 0.0001f) return;
+        barrel.right = to.normalized;
+    }
+
+    void TryAim() {
+        if (_player == null) _player = FindFirstObjectByType<PlayerController>();
+        if (_player == null) return;
+
+        Vector2 to = (Vector2)_player.transform.position - (Vector2)transform.position;
         if (to.magnitude > range) return; // out of range
         if (Physics2D.Raycast(transform.position, to.normalized, to.magnitude, Layers.WallMask))
             return; // wall in the way
 
-        _aim = to.normalized;              // aim locks here
+        // Lock aim here. Barrel freezes until the shot is fired.
+        _aim = to.normalized;
         _fireAt = Time.time + telegraph;
         if (barrel != null) barrel.right = _aim;
     }

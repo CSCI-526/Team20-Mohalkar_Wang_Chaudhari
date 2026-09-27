@@ -46,8 +46,8 @@ public class LevelManager : MonoBehaviour {
     // between second 5 and second 55 and the 60-second arc table was aspirational.
 
     public int Tier => _tier;
-    public float CrawlerSpeed  => Mathf.Min(2.0f + 0.5f * _tier, 4.5f);   // capped under player's 5.0
-    public float TurretFireGap => Mathf.Max(2.0f - 0.2f * _tier, 1.0f);   // floor: telegraph is 0.5s,
+    public float CrawlerSpeed  => Mathf.Min(1.5f + 0.5f * _tier, 4.0f);   // -0.5 vs v1; capped under player's 5.0
+    public float TurretFireGap => Mathf.Max(2.5f - 0.2f * _tier, 1.5f);   // +0.5s vs v1; floor: telegraph is 0.5s,
     public float TurretRespawn => Mathf.Max(4.0f - 0.4f * _tier, 2.0f);   // any faster and it glows nonstop
 
     void Awake() {
