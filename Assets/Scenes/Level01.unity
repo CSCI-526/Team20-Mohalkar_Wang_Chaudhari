@@ -1089,7 +1089,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -48, y: -34}
+  m_AnchoredPosition: {x: -352, y: -34}
   m_SizeDelta: {x: 600, y: 140}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &521921756
@@ -1118,7 +1118,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 48
     m_Alignment: 2
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -1678,7 +1678,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 120
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -2043,7 +2043,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 48, y: -34}
+  m_AnchoredPosition: {x: 348, y: -34}
   m_SizeDelta: {x: 600, y: 140}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1025282890
@@ -2072,7 +2072,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 48
     m_Alignment: 0
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -3845,11 +3845,8 @@ MonoBehaviour:
   halfWidth: 9
   amplitude: 4.5
   laneX: 0
-  laneY: 0
   topY: 5
   bottomY: -5
-  leftX: -9
-  rightX: 9
 --- !u!61 &1993162070
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -4033,7 +4030,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 44
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
