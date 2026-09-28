@@ -329,3 +329,4 @@ MonoBehaviour:
   countdownRing: {fileID: 3210814550164012929}
   ringRenderer: {fileID: 6669372203160912484}
   iconRenderer: {fileID: 1055207041130048481}
+  patrolSpeed: 1.5
