@@ -181,6 +181,8 @@ public static class SceneBuilder {
     }
 
     static void BuildTurrets(Bullet enemyBullet) {
+        // Turret body is 0.6 (was 1.0). Positions and firing offsets below are Harrison's.
+        const float TS = 0.6f;
         var root = new GameObject("Turrets").transform;
         // Harrison's layout: three corners plus a fourth, bottom-right. T4's x is 7.89, not 8 -
         // that is where he dragged it in the editor, and it is kept as he set it.
@@ -189,12 +191,14 @@ public static class SceneBuilder {
         // steps. The largest must stay under the fire gap (floor 1.5s) or they re-sync.
         float[] phase = { 0.45f, 0.9f, 1.35f, 0f };
         for (int i = 0; i < at.Length; i++) {
-            var go = Quad($"T{i + 1}", at[i], Vector2.one, new Color(1f, 0.33f, 0.2f), 6);
+            var go = Quad($"T{i + 1}", at[i], Vector2.one * TS, new Color(1f, 0.33f, 0.2f), 6);
             go.transform.SetParent(root);
             go.layer = L("Enemy");
             go.AddComponent<BoxCollider2D>();
 
-            var barrel = Quad("Barrel", Vector2.zero, new Vector2(0.5f, 0.12f),
+            // The barrel is parented with world scale preserved, so this IS its world size:
+            // 0.9 x 0.22, longer than the 0.6 body so the aim direction still reads.
+            var barrel = Quad("Barrel", Vector2.zero, new Vector2(0.9f, 0.22f),
                               new Color(0.67f, 0.13f, 0f), 7);
             barrel.transform.SetParent(go.transform);
             barrel.transform.localPosition = Vector3.zero;
@@ -203,7 +207,9 @@ public static class SceneBuilder {
             tip.transform.SetParent(barrel.transform);
             tip.transform.localPosition = new Vector3(1.1f, 0, 0);
 
-            var core = Quad("Core", Vector2.zero, Vector2.one * 0.25f, new Color(1f, 0.53f, 0.33f), 8);
+            // The core IS the 0.5s telegraph. It is parented with worldPositionStays:false, so
+            // this 0.45 is multiplied by the turret's 0.6 scale (about 0.27 in the world).
+            var core = Quad("Core", Vector2.zero, Vector2.one * 0.45f, new Color(1f, 0.53f, 0.33f), 8);
             core.GetComponent<SpriteRenderer>().sprite = SpriteFactory.Load("circle");
             core.transform.SetParent(go.transform, false);   // see AimDot: keep local (0,0)
 
