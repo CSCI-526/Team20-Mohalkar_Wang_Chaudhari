@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Lockdown {
 
-/// <summary>Plan v2 section 13. Cached layer indices so hot paths avoid string lookups.</summary>
+/// <summary>Cached layer indices so hot paths avoid string lookups.</summary>
 public static class Layers {
     public static readonly int Player       = LayerMask.NameToLayer("Player");
     public static readonly int Enemy        = LayerMask.NameToLayer("Enemy");

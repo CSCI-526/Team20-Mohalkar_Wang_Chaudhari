@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Lockdown {
 
 /// <summary>With no audio and no slow-mo, this is the loudest feedback left. Expect to
-/// tune the magnitudes up (plan v2 section 12).</summary>
+/// tune the magnitudes up.</summary>
 public class CameraShake : MonoBehaviour {
     public static CameraShake I { get; private set; }
 

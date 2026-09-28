@@ -5,13 +5,13 @@ namespace Lockdown {
 public enum Direction { Up = 0, Down = 1, Left = 2, Right = 3, None = -1 }
 
 /// <summary>
-/// Plan v2 section 4. Direction maths, including the quadrant rule that replaced
-/// v1's four-row table (which only covered 4 of 360 possible bullet angles).
+/// Direction maths, including the quadrant rule that maps any bullet angle, not just the four
+/// axis-aligned ones, to the direction the player loses.
 /// </summary>
 public static class Dir {
     public const int Count = 4;
 
-    // Plan section 4 fallback / mercy-award priority.
+    // Priority order used for fallbacks and for the mercy award.
     public static readonly Direction[] Priority =
         { Direction.Up, Direction.Down, Direction.Left, Direction.Right };
 
@@ -34,7 +34,7 @@ public static class Dir {
     /// <summary>
     /// The two cardinals of the quadrant OPPOSITE the bullet's travel - i.e. the two
     /// directions the player is a candidate to lose. A zero component counts as positive.
-    /// Plan v2 section 4.
+    ///
     ///   travels Up-Right   -> Down or Left
     ///   travels Down-Right -> Up   or Left
     ///   travels Down-Left  -> Up   or Right

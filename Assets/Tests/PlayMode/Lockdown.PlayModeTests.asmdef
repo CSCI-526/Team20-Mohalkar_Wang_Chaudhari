@@ -1,0 +1,10 @@
+{
+    "name": "Lockdown.PlayModeTests",
+    "rootNamespace": "Lockdown.Tests",
+    "references": ["Lockdown", "UnityEngine.TestRunner"],
+    "includePlatforms": [],
+    "precompiledReferences": ["nunit.framework.dll"],
+    "overrideReferences": true,
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"]
+}

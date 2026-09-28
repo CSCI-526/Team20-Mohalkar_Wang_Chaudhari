@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Lockdown {
 
 /// <summary>
-/// Plan v2 sections 2 and 3. HEARTS ARE HEALTH; DIRECTIONS ARE MOBILITY. They are separate
-/// systems and will visibly desync within ~20 seconds. That is intended.
+/// Hearts are health; directions are mobility. They are separate systems, so the two
+/// counts drift apart during a run.
 /// </summary>
 public class PlayerHealth : MonoBehaviour {
     public int maxHearts = 5;
@@ -16,7 +16,7 @@ public class PlayerHealth : MonoBehaviour {
     public float shakeOnHit   = 0.30f;
 
     public int Hearts { get; private set; }
-    /// <summary>Bullets only. Explicitly does NOT cover the crawler (decision B5).</summary>
+    /// <summary>Bullets only. Explicitly does NOT cover the crawler.</summary>
     public bool Invulnerable => Time.time < _invulnUntil;
 
     public event Action<int> OnHeartsChanged;
@@ -35,7 +35,7 @@ public class PlayerHealth : MonoBehaviour {
     }
 
     /// <summary>A bullet landed. <paramref name="travel"/> is the bullet's POST-BOUNCE
-    /// velocity - that is what the quadrant rule reads (decision B2).</summary>
+    /// velocity - that is what the quadrant rule reads.</summary>
     public void TakeHit(Vector2 travel) {
         if (LevelManager.I != null && LevelManager.I.Frozen) return;
         if (Invulnerable) return;
@@ -45,7 +45,7 @@ public class PlayerHealth : MonoBehaviour {
         Hearts = Mathf.Max(0, Hearts - 1);
         OnHeartsChanged?.Invoke(Hearts);
 
-        // Mercy sub-rule 5: if nothing is left to take, the hit STILL costs a heart and
+        // If nothing is left to take, the hit STILL costs a heart and
         // removes nothing. The cooldown keeps running.
         Direction lost = DirectionSystem.I != null ? DirectionSystem.I.ApplyHit(travel) : Direction.None;
         if (lost != Direction.None && OrbSpawner.I != null) OrbSpawner.I.SpawnFor(lost);
@@ -59,7 +59,7 @@ public class PlayerHealth : MonoBehaviour {
     /// <summary>
     /// Crawler contact. Instant, regardless of hearts.
     ///
-    /// The rule (plan v2 section 7): i-frames NEVER save you from the crawler while you can
+    /// The rule: i-frames NEVER save you from the crawler while you can
     /// move; the mercy window DOES, because you can't. I-frames follow a hit you could have
     /// dodged; the mercy window covers a state with no counterplay at all - and at tier 5 the
     /// crawler crosses its whole path in 1.33s, well inside the 2s freeze.

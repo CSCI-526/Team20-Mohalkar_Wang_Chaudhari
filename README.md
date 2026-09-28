@@ -48,13 +48,28 @@ direction comes straight back.
 You have **15 seconds** before the orb burns out — watch the ring around it shrink. Let it
 expire and that direction is gone for the rest of the run.
 
-The catch: the orb tends to land in the direction you just lost. The one place you need to
-reach is the one place you can't walk in a straight line to, so you have to go the long way
-round — out in the open, with three turrets watching.
+The orb always lands somewhere you **can** reach with the directions you have left — never
+behind a key you've lost — but far enough away (roughly a third of the arena) that getting
+there means crossing open ground with three turrets watching. If a later hit cuts you off
+from an orb that's already out, it jumps to a new reachable spot and keeps its timer.
 
 **If all four directions go at once**, you're frozen solid. Hold on for two seconds and the
 game hands one back. It's the only thing standing between you and a soft lock, and it will
 keep doing it — but the turrets don't stop firing while you wait.
+
+## Walls
+
+The outer walls throw you back. Hit one and you rebound at the speed you hit it with —
+head-on comes back hard, a glancing angle comes back gentler — and the bounce carries you
+all the way back to the middle of the arena. Press any new key mid-bounce and you take
+control back instantly — stop, reverse or dodge. Keys you were already holding when you hit
+the wall don't cancel it, and letting go doesn't either. The bounce ignores your lost keys: losing
+*Left* stops you choosing to move left, it doesn't stop the right-hand wall throwing you
+left.
+
+The bounce stops short of the crawler's patrol line — a wall should never throw you into
+an instant kill — and it ends early if it carries you into a pillar. The pillars
+themselves don't bounce; they're solid cover.
 
 ---
 

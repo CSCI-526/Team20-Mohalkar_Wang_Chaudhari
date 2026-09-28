@@ -3,8 +3,7 @@ using UnityEngine;
 namespace Lockdown {
 
 /// <summary>
-/// Plan v2 section 8. ONE script, both teams - player bullets got the same wall behaviour
-/// as enemy bullets (decision C3), so there was no reason to keep two.
+/// One script for both teams: player bullets behave like enemy bullets at walls.
 ///
 /// Walls are handled by a CircleCast rather than by physics collision. Two reasons:
 ///   1. A trigger gives no contact normal, and Vector2.Reflect needs one.
@@ -17,13 +16,12 @@ public class Bullet : MonoBehaviour {
     [Header("Team")]
     public bool isEnemyBullet = true;
 
-    [Header("Speeds / lifetimes (plan v2 section 8 - Inspector knobs, these are guesses)")]
+    [Header("Speeds / lifetimes (Inspector knobs, tune to taste)")]
     public float freshSpeed      = 5.0f;
     public float bouncedSpeed    = 4.5f;
     public float freshLifetime   = 4.0f;
-    /// <summary>v1 had 2.0s. At 4.5 u/s that is 9 units of travel in a 20-wide arena - the
-    /// bullet died mid-air around x = -1 and "destroyed on 2nd wall hit" almost never ran.
-    /// 3.0s = 13.5 units, which actually crosses the room.</summary>
+    /// <summary>At 4.5 u/s, 3.0s covers 13.5 units - enough to cross most of the 20-wide arena, so
+    /// a bounced bullet usually reaches a second wall instead of expiring mid-air.</summary>
     public float bouncedLifetime = 3.0f;
 
     [Header("Bounced look (the 'ping' is gone - this carries it alone)")]
@@ -83,8 +81,7 @@ public class Bullet : MonoBehaviour {
         _life      = bouncedLifetime;
         _canBounce = false;
 
-        // With no audio the "ping" is gone, so make the visual swap stark
-        // (plan v2 section 8).
+        // Nothing plays on a bounce, so make the visual swap stark.
         if (_sr != null) _sr.color = bouncedTint;
         transform.localScale *= bouncedScale;
     }
@@ -92,7 +89,7 @@ public class Bullet : MonoBehaviour {
     void OnTriggerEnter2D(Collider2D other) {
         int layer = other.gameObject.layer;
 
-        // Opposing bullet: both die. Player bullet is CONSUMED - a 1-for-1 trade (B12).
+        // Opposing bullet: both die. Player bullet is CONSUMED - a 1-for-1 trade.
         if (layer == (isEnemyBullet ? Layers.PlayerBullet : Layers.EnemyBullet)) {
             Destroy(other.gameObject);
             Destroy(gameObject);
@@ -103,7 +100,7 @@ public class Bullet : MonoBehaviour {
             var hp = other.GetComponentInParent<PlayerHealth>();
             // Damage decisions (i-frames, which direction is lost) live in PlayerHealth.
             // The bullet is destroyed either way: a bullet visibly passing through the
-            // player reads as broken hit detection, not as mercy (B13).
+            // player reads as broken hit detection, not as mercy.
             if (hp != null) hp.TakeHit(Velocity);
             Destroy(gameObject);
             return;
@@ -112,7 +109,7 @@ public class Bullet : MonoBehaviour {
         if (!isEnemyBullet && layer == Layers.Enemy) {
             var t = other.GetComponentInParent<Turret>();
             if (t != null) t.TakeHit();       // a spawn-protected turret survives and flashes
-            Destroy(gameObject);              // ...but the bullet dies regardless (B7)
+            Destroy(gameObject);              // ...but the bullet dies regardless
         }
     }
 }

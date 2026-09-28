@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Lockdown {
 
 /// <summary>
-/// Plan v2 section 12. The ONLY thing in the project allowed to write Time.timeScale.
+/// The ONLY thing in the project allowed to write Time.timeScale.
 ///
 /// Why this exists: two hitstops can overlap (you kill a turret 0.02s before a bullet
 /// hits you). Written naively - one coroutine per effect, each restoring timeScale = 1 -

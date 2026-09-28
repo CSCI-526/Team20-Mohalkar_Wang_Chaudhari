@@ -2,17 +2,26 @@ using UnityEngine;
 
 namespace Lockdown {
 
-/// <summary>Plan v2 section 8/9. Mouse aim, independent of movement - you can always shoot
+/// <summary>Mouse aim, independent of movement - you can always shoot
 /// in a direction you can no longer move in.</summary>
 public class PlayerShooting : MonoBehaviour {
     public Bullet bulletPrefab;
     public Transform firePoint;
+    [Tooltip("Seconds between shots. 0.25 = 4 shots/sec.")]
     public float fireRate = 0.25f;
 
     float _next;
 
+    /// <summary>
+    /// The gun is locked at full mobility and unlocks as soon as any direction is lost.
+    /// Collecting every orb restores full mobility and locks it again, so staying one
+    /// direction down keeps the gun armed.
+    /// </summary>
+    public bool Armed => DirectionSystem.I != null && DirectionSystem.I.AnyLost();
+
     void Update() {
         if (LevelManager.I != null && LevelManager.I.Frozen) return;
+        if (!Armed) return;
         if (!Input.GetMouseButton(0) || Time.time < _next) return;
         if (bulletPrefab == null) return;
 
