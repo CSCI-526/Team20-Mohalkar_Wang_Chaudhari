@@ -15,7 +15,6 @@ public class LevelManager : MonoBehaviour {
 
     [Header("Run")]
     public float runDuration = 60f;
-    public float deathRestartDelay = 1.5f;
 
     [Header("Difficulty ramp (plan v2 section 2)")]
     public float tierLength = 10f;
@@ -38,8 +37,7 @@ public class LevelManager : MonoBehaviour {
     public event Action<int> OnTierChanged;
 
     int _tier = 0;
-    float _deathAt = -1f;
-    bool _lateCrawlersSpawned;
+    bool _lateCrawlersSpawned;   // Harrison's: late-phase crawlers spawn once
 
     // ------------------------------------------------------------------ the ramp
     // Six tiers over 60s. This is the only escalation in the game - in v1 nothing changed
@@ -67,13 +65,11 @@ public class LevelManager : MonoBehaviour {
         // hundred times while tuning.
         if (Input.GetKeyDown(KeyCode.R)) { Restart(); return; }
 
-        switch (State) {
-            case GameState.Playing: TickPlaying(); break;
-            case GameState.Won:     if (Input.anyKeyDown) Restart(); break;   // a win holds
-            case GameState.Dead:                                              // a loss doesn't
-                if (Time.unscaledTime >= _deathAt) Restart();
-                break;
-        }
+        // Won and Dead both just hold. Restarting is the player's call now, via the centred
+        // RESTART button - previously a win restarted on ANY key (including the mouse click
+        // that would press that button) and a death restarted itself on a timer, neither of
+        // which leaves room for a button.
+        if (State == GameState.Playing) TickPlaying();
     }
 
     void TickPlaying() {
@@ -143,7 +139,6 @@ public class LevelManager : MonoBehaviour {
     public void Die() {
         if (State != GameState.Playing) return;   // cannot die after winning
         State = GameState.Dead;
-        _deathAt = Time.unscaledTime + deathRestartDelay;
         Hitstop.Reset();
         OnStateChanged?.Invoke(State);
     }

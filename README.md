@@ -61,8 +61,9 @@ keep doing it — but the turrets don't stop firing while you wait.
 
 The outer walls throw you back. Hit one and you rebound at the speed you hit it with —
 head-on comes back hard, a glancing angle comes back gentler — and the bounce carries you
-all the way back to the middle of the arena. You can still steer sideways while you're
-being carried, so you can dodge on the way. The bounce ignores your lost keys: losing
+all the way back to the middle of the arena. Press any new key mid-bounce and you take
+control back instantly — stop, reverse or dodge. Keys you were already holding when you hit
+the wall don't cancel it, and letting go doesn't either. The bounce ignores your lost keys: losing
 *Left* stops you choosing to move left, it doesn't stop the right-hand wall throwing you
 left.
 
@@ -131,7 +132,7 @@ gives your hearts back.
 - **Before:** hitting a wall just stopped you dead.
 - **Now:** the outer walls throw you back at the speed you hit them, all the way to the
   middle of the arena.
-  - You can steer sideways during the bounce.
+  - Press any new key mid-bounce to take control back instantly (e.g. to dodge a bullet).
   - A lost key doesn't block the bounce.
   - It stops short of the crawler's patrol path.
   - It ends early if you hit a pillar or turret.

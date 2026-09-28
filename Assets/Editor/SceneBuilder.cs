@@ -18,7 +18,6 @@ public static class SceneBuilder {
 
     static readonly Color BG      = new(0.067f, 0.067f, 0.067f);
     static readonly Color WallCol = new(0.27f, 0.27f, 0.27f);
-    static readonly Color PillarC = new(0.33f, 0.33f, 0.33f);
 
     [MenuItem("LOCKDOWN/Rebuild Level01")]
     public static void Build() {
@@ -29,7 +28,7 @@ public static class SceneBuilder {
 
         BuildCamera();
         BuildWalls();
-        BuildPillars();
+        // No pillars: Harrison's level has none, so nothing builds them.
 
         Directory.CreateDirectory(PrefabDir);
         Bullet enemyBullet  = MakeBulletPrefab("EnemyBullet",  true);
@@ -86,24 +85,37 @@ public static class SceneBuilder {
     static void BuildCamera() {
         var go = new GameObject("Main Camera");
         go.tag = "MainCamera";
-        go.transform.position = new Vector3(0, 0, -10);
+        // Camera sits ABOVE centre, so the arena renders lower in frame and leaves a wide
+        // band across the top for the HUD. Bottom wall still clears the lower edge.
+        go.transform.position = new Vector3(0, 0.7f, -10);
         var cam = go.AddComponent<Camera>();
         cam.orthographic     = true;
-        cam.orthographicSize = 6f;          // half-height == arena half-height (decision A7)
+        // Half-height 7.2 against a 6-unit play area. Size 6 framed the PLAY AREA exactly,
+        // which meant the walls - which sit outside it - were entirely off-screen.
+        // Combined with the +0.7 offset: visible y is -6.5 .. 7.9, so the bottom wall clears
+        // the edge by 0.1 and there is a 1.5-unit band above the top wall for the HUD.
+        cam.orthographicSize = 7.2f;
         cam.backgroundColor  = BG;
         cam.clearFlags       = CameraClearFlags.SolidColor;
         go.AddComponent<CameraShake>();
         go.AddComponent<AudioListener>();
     }
 
-    /// <summary>Walls OVERLAP at the corners. Four thin strips meeting at a zero-width seam
-    /// let a shallow-angle bullet slip straight through (plan v2 section 9).</summary>
+    /// <summary>
+    /// Walls sit just outside the 20x12 play area, with their INNER faces on the boundary
+    /// (x = +/-10, y = +/-6).
+    ///
+    /// They OVERLAP at the corners on purpose - four strips meeting at a zero-width seam let a
+    /// shallow-angle bullet slip straight through (plan v2 section 9).
+    /// </summary>
     static void BuildWalls() {
+        const float T = 0.4f;               // thickness: was 1.0, which read as a slab
+        const float HX = 10f, HY = 6f;      // play-area half-extents
         var root = new GameObject("Walls").transform;
-        Wall(root, "Top",    new Vector2(0,  6.5f), new Vector2(22, 1));
-        Wall(root, "Bottom", new Vector2(0, -6.5f), new Vector2(22, 1));
-        Wall(root, "Left",   new Vector2(-10.5f, 0), new Vector2(1, 14));
-        Wall(root, "Right",  new Vector2( 10.5f, 0), new Vector2(1, 14));
+        Wall(root, "Top",    new Vector2(0,  HY + T/2), new Vector2(2*HX + 2*T, T));
+        Wall(root, "Bottom", new Vector2(0, -HY - T/2), new Vector2(2*HX + 2*T, T));
+        Wall(root, "Left",   new Vector2(-HX - T/2, 0), new Vector2(T, 2*HY + 2*T));
+        Wall(root, "Right",  new Vector2( HX + T/2, 0), new Vector2(T, 2*HY + 2*T));
     }
 
     static void Wall(Transform parent, string name, Vector2 pos, Vector2 size) {
@@ -113,21 +125,13 @@ public static class SceneBuilder {
         go.AddComponent<BoxCollider2D>();
     }
 
-    static void BuildPillars() {
-        var root = new GameObject("Pillars").transform;
-        Vector2[] at = { new(-5, 2), new(5, 2), new(-5, -2), new(5, -2) };
-        for (int i = 0; i < at.Length; i++) {
-            var go = Quad($"P{i + 1}", at[i], Vector2.one, PillarC, 4);
-            go.transform.SetParent(root);
-            go.layer = L("Wall");
-            go.AddComponent<BoxCollider2D>();
-        }
-    }
-
     static PlayerController BuildPlayer(Bullet playerBullet) {
         var go = new GameObject("Player") { layer = L("Player") };
-        go.transform.position = new Vector3(0, 4, 0);
-        go.transform.localScale = Vector3.one * 0.8f;
+        go.transform.position = new Vector3(0, 0, 0);   // Harrison: start at the arena centre
+        // Body size. Everything on the player - fins, aim dot, collider - is a child or a
+        // local radius, so they all scale from this one number. Tune here, not in six places.
+        const float PS = 0.6f;
+        go.transform.localScale = Vector3.one * PS;
 
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = SpriteFactory.Load("square");
@@ -141,7 +145,7 @@ public static class SceneBuilder {
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
-        go.AddComponent<CircleCollider2D>().radius = 0.5f;   // 0.4 world at scale 0.8
+        go.AddComponent<CircleCollider2D>().radius = 0.5f;   // 0.3 world radius at scale 0.6
 
         var fins = new SpriteRenderer[4];
         Vector2[] finPos = { new(0, 0.55f), new(0, -0.55f), new(-0.55f, 0), new(0.55f, 0) };
@@ -155,7 +159,10 @@ public static class SceneBuilder {
 
         var dot = Quad("AimDot", Vector2.zero, Vector2.one * 0.19f, new Color(0.2f, 0.87f, 1f), 12);
         dot.GetComponent<SpriteRenderer>().sprite = SpriteFactory.Load("circle");
-        dot.transform.SetParent(go.transform);
+        // worldPositionStays:false is load-bearing. Quad() creates this at world origin, and
+        // the default SetParent PRESERVES world position - which left the aim dot sitting at
+        // (0,0) in the middle of the arena instead of on the player.
+        dot.transform.SetParent(go.transform, false);
 
         var fire = new GameObject("FirePoint");
         fire.transform.SetParent(go.transform);
@@ -174,15 +181,24 @@ public static class SceneBuilder {
     }
 
     static void BuildTurrets(Bullet enemyBullet) {
+        // Turret body is 0.6 (was 1.0). Positions and firing offsets below are Harrison's.
+        const float TS = 0.6f;
         var root = new GameObject("Turrets").transform;
-        Vector2[] at = { new(-8, 5), new(8, 5), new(0, -5) };
+        // Harrison's layout: three corners plus a fourth, bottom-right. T4's x is 7.89, not 8 -
+        // that is where he dragged it in the editor, and it is kept as he set it.
+        Vector2[] at  = { new(-8, 5), new(8, 5), new(-8, -5), new(7.89f, -5) };
+        // Firing offsets so the four never volley together: T4 first, then T1, T2, T3 at 0.45s
+        // steps. The largest must stay under the fire gap (floor 1.5s) or they re-sync.
+        float[] phase = { 0.45f, 0.9f, 1.35f, 0f };
         for (int i = 0; i < at.Length; i++) {
-            var go = Quad($"T{i + 1}", at[i], Vector2.one, new Color(1f, 0.33f, 0.2f), 6);
+            var go = Quad($"T{i + 1}", at[i], Vector2.one * TS, new Color(1f, 0.33f, 0.2f), 6);
             go.transform.SetParent(root);
             go.layer = L("Enemy");
             go.AddComponent<BoxCollider2D>();
 
-            var barrel = Quad("Barrel", Vector2.zero, new Vector2(0.5f, 0.12f),
+            // The barrel is parented with world scale preserved, so this IS its world size:
+            // 0.9 x 0.22, longer than the 0.6 body so the aim direction still reads.
+            var barrel = Quad("Barrel", Vector2.zero, new Vector2(0.9f, 0.22f),
                               new Color(0.67f, 0.13f, 0f), 7);
             barrel.transform.SetParent(go.transform);
             barrel.transform.localPosition = Vector3.zero;
@@ -191,9 +207,11 @@ public static class SceneBuilder {
             tip.transform.SetParent(barrel.transform);
             tip.transform.localPosition = new Vector3(1.1f, 0, 0);
 
-            var core = Quad("Core", Vector2.zero, Vector2.one * 0.25f, new Color(1f, 0.53f, 0.33f), 8);
+            // The core IS the 0.5s telegraph. It is parented with worldPositionStays:false, so
+            // this 0.45 is multiplied by the turret's 0.6 scale (about 0.27 in the world).
+            var core = Quad("Core", Vector2.zero, Vector2.one * 0.45f, new Color(1f, 0.53f, 0.33f), 8);
             core.GetComponent<SpriteRenderer>().sprite = SpriteFactory.Load("circle");
-            core.transform.SetParent(go.transform);
+            core.transform.SetParent(go.transform, false);   // see AimDot: keep local (0,0)
 
             var t = go.AddComponent<Turret>();
             t.bulletPrefab = enemyBullet;
@@ -201,7 +219,7 @@ public static class SceneBuilder {
             t.barrelTip = tip.transform;
             t.core      = core.GetComponent<SpriteRenderer>();
             t.body      = go.GetComponent<SpriteRenderer>();
-            t.firePhase = i * 0.45f;   // stagger so turrets do not volley together
+            t.firePhase = phase[i];
         }
     }
 
@@ -256,24 +274,87 @@ public static class SceneBuilder {
 
         var hud = systems.AddComponent<HUDController>();
 
-        string[] glyphs = { "↑", "↓", "←", "→" };
-        var arrows = new Text[4];
-        for (int i = 0; i < 4; i++)
-            arrows[i] = Label(canvas.transform, $"Arrow{i}", glyphs[i], 64,
-                              new Vector2(0, 1), new Vector2(60 + i * 70, -60),
-                              TextAnchor.MiddleCenter, OrbSpawner.OrbColors[i]);
+        // No direction arrows: the coloured fins on the ship already show which directions
+        // are live, and they are where the player is already looking.
 
-        hud.arrows = arrows;
-        hud.hearts = Label(canvas.transform, "Hearts", "♥♥♥♥♥", 52,
-                           new Vector2(1, 1), new Vector2(-220, -60), TextAnchor.MiddleRight, Color.red);
-        hud.timer  = Label(canvas.transform, "Timer", "1:00", 84,
-                           new Vector2(0.5f, 1), new Vector2(0, -80), TextAnchor.MiddleCenter, Color.white);
+        // The HUD lives in the band ABOVE the play area - the strip the player can never
+        // enter, so it covers nothing that matters. Timer top-left, hearts top-right, matched
+        // sizes so they read as one row.
+        //
+        // Each is anchored AND pivoted on its own corner, so the text grows inward from the
+        // edge and cannot crop however the window is resized.
+        const int hudSize = 48;
+        const float hudY  = -34f, hudX = 48f;
+
+        hud.hearts = Label(canvas.transform, "Hearts", "♥♥♥♥♥", hudSize,
+                           new Vector2(1, 1), new Vector2(-hudX, hudY),
+                           TextAnchor.UpperRight, Color.red, new Vector2(1, 1));
+        hud.timer  = Label(canvas.transform, "Timer", "1:00", hudSize,
+                           new Vector2(0, 1), new Vector2(hudX, hudY),
+                           TextAnchor.UpperLeft, Color.white, new Vector2(0, 1));
+        // Full-screen dim, created BEFORE the banner and button so it renders behind them -
+        // in Unity UI, draw order follows sibling index. It sits in front of the hearts and
+        // timer on purpose, so the whole play screen dims uniformly.
+        hud.gameOverOverlay = Overlay(canvas.transform);
+        hud.gameOverOverlay.gameObject.SetActive(false);
+
+        // Banner sits slightly above centre so the restart button can sit under it without
+        // either drifting off the middle of the screen.
         hud.banner = Label(canvas.transform, "Banner", "", 120,
-                           new Vector2(0.5f, 0.5f), Vector2.zero, TextAnchor.MiddleCenter, Color.white);
+                           new Vector2(0.5f, 0.5f), new Vector2(0, 90),
+                           TextAnchor.MiddleCenter, Color.white);
+
+        hud.restartButton = RestartButton(canvas.transform);
+        hud.restartButton.gameObject.SetActive(false);   // only shown once the run ends
+    }
+
+    /// <summary>Full-screen dim behind the end-of-run banner and button.</summary>
+    static Image Overlay(Transform parent) {
+        var go = new GameObject("GameOverOverlay", typeof(Image));
+        go.transform.SetParent(parent, false);
+
+        var img = go.GetComponent<Image>();
+        img.color = new Color(0f, 0f, 0f, 0.72f);
+        img.raycastTarget = true;        // swallow clicks on the frozen arena underneath
+
+        var rt = img.rectTransform;      // stretch to fill whatever the screen is
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+        return img;
+    }
+
+    /// <summary>Centred RESTART button, hidden during play and revealed on win or death.</summary>
+    static Button RestartButton(Transform parent) {
+        var go = new GameObject("RestartButton", typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+
+        var img = go.GetComponent<Image>();
+        img.color = new Color(1f, 1f, 1f, 0.12f);
+
+        var rt = img.rectTransform;
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = new Vector2(0, -60);
+        rt.sizeDelta = new Vector2(340, 96);
+
+        var label = Label(go.transform, "Label", "RESTART", 44,
+                          new Vector2(0.5f, 0.5f), Vector2.zero, TextAnchor.MiddleCenter, Color.white);
+        label.rectTransform.sizeDelta = new Vector2(340, 96);
+        label.raycastTarget = false;                     // clicks belong to the button
+
+        var btn = go.GetComponent<Button>();
+        var colors = btn.colors;
+        colors.normalColor      = new Color(1f, 1f, 1f, 0.12f);
+        colors.highlightedColor = new Color(1f, 1f, 1f, 0.28f);
+        colors.pressedColor     = new Color(1f, 1f, 1f, 0.45f);
+        btn.colors = colors;
+        return btn;
     }
 
     static Text Label(Transform parent, string name, string text, int size,
-                      Vector2 anchor, Vector2 pos, TextAnchor align, Color color) {
+                      Vector2 anchor, Vector2 pos, TextAnchor align, Color color,
+                      Vector2? pivot = null) {
         var go = new GameObject(name, typeof(Text));
         go.transform.SetParent(parent, false);
         var t = go.GetComponent<Text>();
@@ -286,7 +367,10 @@ public static class SceneBuilder {
         t.verticalOverflow = VerticalWrapMode.Overflow;
         var rt = t.rectTransform;
         rt.anchorMin = rt.anchorMax = anchor;
-        rt.pivot = new Vector2(0.5f, 0.5f);
+        // Pivot defaults to centre, but a CORNER-anchored label must pivot on that same
+        // corner. Otherwise half its box hangs past the screen edge and the text crops -
+        // which is exactly what happened to the hearts when they were top-right before.
+        rt.pivot = pivot ?? new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = pos;
         rt.sizeDelta = new Vector2(600, 140);
         return t;

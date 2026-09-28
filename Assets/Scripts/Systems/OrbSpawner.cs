@@ -30,6 +30,11 @@ public class OrbSpawner : MonoBehaviour {
     public float crawlerPathClearance = 1.5f;
     public float gridStep = 0.5f;
 
+    [Header("Patrol")]
+    [Tooltip("Half-length of the orb's back-and-forth sweep. 1.25 gives a 2.5 unit path - short, " +
+             "nothing like the crawler's full-arena S-curve.")]
+    public float patrolHalfRange = 1.25f;
+
     public static readonly Color[] OrbColors = {
         new(0.20f, 0.53f, 1.00f),   // Up    #3388FF
         new(1.00f, 0.20f, 0.20f),   // Down  #FF3333
@@ -75,7 +80,36 @@ public class OrbSpawner : MonoBehaviour {
 
         Orb orb = Instantiate(orbPrefab, at, Quaternion.identity);
         orb.Init(d, OrbColors[(int)d]);
+        BuildPatrol(orb, at);
         _live[d] = orb;
+    }
+
+    /// <summary>
+    /// Sweep the orb back and forth along the axis of the direction that was lost -
+    /// horizontal for Left/Right, vertical for Up/Down. You cannot chase it on that axis, so
+    /// you park on its line and catch it on a pass.
+    ///
+    /// EVERY endpoint must satisfy the same reachability rule the spawn spot did
+    /// (OrbPlacement.CanReach), be inside the arena and clear of walls. The reachable set is
+    /// convex along an axis, so if both ends are reachable so is everything between them.
+    /// The path is shrunk symmetrically until it fits and collapses to a stationary orb if it
+    /// cannot - a patrol that wandered out of reach would recreate the very bug the
+    /// reachability work exists to prevent.
+    /// </summary>
+    void BuildPatrol(Orb orb, Vector2 centre) {
+        Vector2 axis = (orb.Dir == Direction.Left || orb.Dir == Direction.Right)
+                     ? Vector2.right : Vector2.up;
+        var q = BuildQuery(orb);
+
+        bool Fits(Vector2 p) =>
+            q.arena.Contains(p) && !q.solidAt(p) &&
+            OrbPlacement.CanReach(q.player, p, q.canMove, q.pickupReach, q.pathClear);
+
+        for (float half = patrolHalfRange; half > 0.1f; half -= 0.25f) {
+            Vector2 a = centre - axis * half, b = centre + axis * half;
+            if (Fits(a) && Fits(b)) { orb.SetPatrol(a, b); return; }
+        }
+        orb.SetPatrol(centre, centre);   // no room to sweep: sit still
     }
 
     /// <summary>Can the player walk to this point with the directions they have left?</summary>
@@ -87,7 +121,9 @@ public class OrbSpawner : MonoBehaviour {
     void RelocateStranded() {
         foreach (var orb in new List<Orb>(_live.Values)) {
             if (orb == null || IsReachable(orb.transform.position)) continue;
-            if (PickSpot(orb, out Vector2 at)) orb.Relocate(at);
+            if (!PickSpot(orb, out Vector2 at)) continue;
+            orb.Relocate(at);
+            BuildPatrol(orb, at);   // Relocate dropped the old path
         }
     }
 
