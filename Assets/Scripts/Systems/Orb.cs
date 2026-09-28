@@ -21,6 +21,10 @@ public class Orb : MonoBehaviour {
     public Direction Dir { get; private set; }
 
     const float PopTime = 0.25f;
+    const float PulseAmount = 0.2f;
+    /// <summary>Smallest the pulse makes the orb (and its pickup collider). OrbSpawner sizes
+    /// its "close enough to touch" rule on this.</summary>
+    public const float PulseMin = 1f - PulseAmount;
 
     float _dieAt;
     float _poppedAt = -1f;
@@ -28,6 +32,10 @@ public class Orb : MonoBehaviour {
 
     Vector2 _a, _b, _target;
     bool _patrols;
+
+    /// <summary>Ends of the patrol sweep (both the orb's position if it sits still).</summary>
+    public Vector2 PatrolA => _patrols ? _a : (Vector2)transform.position;
+    public Vector2 PatrolB => _patrols ? _b : (Vector2)transform.position;
 
     void Awake() { _baseScale = transform.localScale; }
 
@@ -78,7 +86,7 @@ public class Orb : MonoBehaviour {
         }
         // Pulse AROUND the prefab's own scale. Assigning Vector3.one here threw away the
         // 0.8 the prefab was built at, so every orb rendered 25% oversized.
-        float pulse = 1f + 0.2f * Mathf.Sin(Time.unscaledTime * (Mathf.PI * 2f / 0.8f));
+        float pulse = 1f + PulseAmount * Mathf.Sin(Time.unscaledTime * (Mathf.PI * 2f / 0.8f));
         // Grows back in after a relocation so the jump reads as deliberate, not a glitch.
         float pop = _poppedAt < 0f ? 1f : Mathf.Clamp01((Time.unscaledTime - _poppedAt) / PopTime);
         transform.localScale = _baseScale * pulse * pop;

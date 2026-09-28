@@ -19,6 +19,7 @@ public class Level01PlayTests {
     [UnitySetUp]
     public IEnumerator LoadLevel() {
         PlayerController.TestInput = null;
+        LevelManager.SkipIntro = true;          // straight into play, no instruction page
         SceneManager.LoadScene("Level01");
         yield return null;
         yield return null;
@@ -86,22 +87,30 @@ public class Level01PlayTests {
     }
 
     [UnityTest]
-    public IEnumerator SideWallBounceStopsShortOfTheCrawler() {
-        GameObject.Find("Turrets")?.SetActive(false);   // crawler stays ON for this one
+    public IEnumerator BounceNeverCarriesThePlayerOntoACrawler() {
+        QuietArena();
+        // A crawler pacing a short vertical lane at x = 3 across the centre line - right in
+        // the path of a bounce off the right wall at mid-height.
+        var proto = Object.FindFirstObjectByType<Crawler>(FindObjectsInactive.Include);
+        var go = Object.Instantiate(proto.gameObject);
+        go.SetActive(true);
+        var cr = go.GetComponent<Crawler>();
+        cr.pathMode = Crawler.PathMode.Vertical;
+        cr.laneX = 3f; cr.bottomY = -1f; cr.topY = 1f;
         Place(new Vector2(8f, 0f));
         yield return new WaitForFixedUpdate();
 
-        float minX = float.MaxValue;
+        float closest = float.MaxValue;
         bool ended = false;
         PlayerController.TestInput = Vector2.right;
         for (float t = 0; t < 3f && !ended; t += Time.fixedDeltaTime) {
             yield return new WaitForFixedUpdate();
-            minX = Mathf.Min(minX, _rb.position.x);
+            if (_pc.Bouncing) closest = Mathf.Min(closest, Vector2.Distance(_rb.position, cr.transform.position));
             if (_pc.BounceCount > 0 && !_pc.Bouncing) ended = true;
         }
         PlayerController.TestInput = Vector2.zero;
         Assert.IsTrue(ended);
-        Assert.That(minX, Is.InRange(4.3f, 4.8f), "stops ~1.5 short of the crawler's path (ends at x = 3)");
+        Assert.GreaterOrEqual(closest, _pc.crawlerClearance - 0.15f, "bounce stops short of the crawler");
         Assert.AreEqual(GameState.Playing, LevelManager.I.State, "the bounce must not kill the player");
     }
 
@@ -155,31 +164,20 @@ public class Level01PlayTests {
     }
 
     [UnityTest]
-    public IEnumerator BounceEndsAtAPillar() {
-        QuietArena();
-        Place(new Vector2(8f, -2f));      // pillar P4 spans x 4.5..5.5 at y = -2
-        yield return new WaitForFixedUpdate();
+    public IEnumerator BounceEndsAtATurret() {
+        GameObject.Find("Crawler")?.SetActive(false);
+        // Turrets stay as solid blocks, but stop shooting.
+        foreach (var t in Object.FindObjectsByType<Turret>(FindObjectsSortMode.None)) t.enabled = false;
 
-        float minX = float.MaxValue;
+        Place(new Vector2(9.2f, 5f));      // between T2 (x 7.7..8.3 at y = 5) and the right wall
+        yield return new WaitForFixedUpdate();
         PlayerController.TestInput = Vector2.right;
         while (_pc.BounceCount == 0) yield return new WaitForFixedUpdate();
         PlayerController.TestInput = Vector2.zero;
-        for (float t = 0; t < 1.5f; t += Time.fixedDeltaTime) {
-            yield return new WaitForFixedUpdate();
-            minX = Mathf.Min(minX, _rb.position.x);
-        }
-        Assert.IsFalse(_pc.Bouncing);
-        Assert.That(minX, Is.InRange(5.8f, 6.1f), "stopped against the pillar, not through it");
-    }
+        for (float t = 0; t < 1f; t += Time.fixedDeltaTime) yield return new WaitForFixedUpdate();
 
-    [UnityTest]
-    public IEnumerator PillarsDoNotBounce() {
-        QuietArena();
-        Place(new Vector2(3.3f, 2f));     // pillar P2 spans x 4.5..5.5 at y = 2
-        yield return new WaitForFixedUpdate();
-        yield return Hold(Vector2.right, 1f, (p, v) => { });
-        Assert.AreEqual(0, _pc.BounceCount);
-        Assert.Greater(_rb.position.x, 3.9f, "reached the pillar and stopped against it");
+        Assert.IsFalse(_pc.Bouncing, "bounce ended at the turret");
+        Assert.That(_rb.position.x, Is.InRange(8.4f, 8.9f), "stopped against the turret, not through it");
     }
 
     // ------------------------------------------------------------ orbs
@@ -210,6 +208,8 @@ public class Level01PlayTests {
                 Assert.IsNotNull(orb, $"no orb for {lost} at {p}");
                 Vector2 at = orb.transform.position;
                 Assert.IsTrue(spawner.IsReachable(at), $"orb at {at} unreachable from {p}, keys mask {mask}");
+                Assert.IsTrue(spawner.IsReachable(orb.PatrolA) && spawner.IsReachable(orb.PatrolB),
+                    $"patrol {orb.PatrolA}..{orb.PatrolB} leaves reach from {p}, keys mask {mask}");
                 Assert.IsNull(Physics2D.OverlapCircle(at, 0.4f, Layers.WallMask), $"orb at {at} is inside a wall");
                 spawner.Retire(lost);
                 spawned++;
@@ -247,6 +247,8 @@ public class Level01PlayTests {
             Vector2 after = orb.transform.position;
             Assert.AreNotEqual(before, after, $"seed {seed}: stranded orb was not moved");
             Assert.IsTrue(spawner.IsReachable(after), $"seed {seed}: relocated orb still unreachable");
+            Assert.IsTrue(spawner.IsReachable(orb.PatrolA) && spawner.IsReachable(orb.PatrolB),
+                $"seed {seed}: relocated orb's patrol leaves reach");
             Assert.IsTrue(spawner.IsReachable(spawner.LiveOrb(strand).transform.position));
         }
         yield return null;

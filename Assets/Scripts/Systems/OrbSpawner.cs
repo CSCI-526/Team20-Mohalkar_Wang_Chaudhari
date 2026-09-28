@@ -102,12 +102,18 @@ public class OrbSpawner : MonoBehaviour {
         var q = BuildQuery(orb);
 
         bool Fits(Vector2 p) =>
-            q.arena.Contains(p) && !q.solidAt(p) &&
+            OrbPlacement.Contains(q.arena, p) && !q.solidAt(p) &&
             OrbPlacement.CanReach(q.player, p, q.canMove, q.pickupReach, q.pathClear);
 
+        // The sweep must also keep clear of the player - otherwise it can start on top of
+        // them, or run straight into them, and the orb is collected before it's ever seen.
+        float clear = q.pickupReach * 2f;
         for (float half = patrolHalfRange; half > 0.1f; half -= 0.25f) {
             Vector2 a = centre - axis * half, b = centre + axis * half;
-            if (Fits(a) && Fits(b)) { orb.SetPatrol(a, b); return; }
+            if (Fits(a) && Fits(b) && OrbPlacement.DistToSegment(q.player, a, b) >= clear) {
+                orb.SetPatrol(a, b);
+                return;
+            }
         }
         orb.SetPatrol(centre, centre);   // no room to sweep: sit still
     }
@@ -118,9 +124,12 @@ public class OrbSpawner : MonoBehaviour {
         return OrbPlacement.CanReach(q.player, p, q.canMove, q.pickupReach, q.pathClear);
     }
 
+    /// <summary>Stranded = where it is now, or either end of its sweep, is out of reach.</summary>
     void RelocateStranded() {
         foreach (var orb in new List<Orb>(_live.Values)) {
-            if (orb == null || IsReachable(orb.transform.position)) continue;
+            if (orb == null) continue;
+            if (IsReachable(orb.transform.position) && IsReachable(orb.PatrolA) && IsReachable(orb.PatrolB))
+                continue;
             if (!PickSpot(orb, out Vector2 at)) continue;
             orb.Relocate(at);
             BuildPatrol(orb, at);   // Relocate dropped the old path
@@ -155,20 +164,47 @@ public class OrbSpawner : MonoBehaviour {
             preferred = new Rect(-pref, pref * 2f),
             minTravel = minTravel,
             maxTravel = maxTravel,
+            pickupReach = PickupReach(),
             solidAt   = p => Physics2D.OverlapCircle(p, SolidRadius, Layers.WallMask) != null,
             pathClear = PathClear,
         };
 
         foreach (var t in Object.FindObjectsByType<Turret>(FindObjectsSortMode.None))
             q.hazards.Add(new OrbPlacement.Hazard(t.transform.position, t.transform.position, minDistance));
+        // The crawler's REAL path, as short segments - the S-curve swings +/-4.5 units, so a
+        // straight start-to-end line guarded the wrong ground entirely.
+        var path = new List<Vector2>();
         foreach (var c in Object.FindObjectsByType<Crawler>(FindObjectsSortMode.None)) {
-            q.hazards.Add(new OrbPlacement.Hazard(c.PathStart(), c.PathEnd(), crawlerPathClearance));
+            path.Clear();
+            c.SamplePath(path);
+            for (int i = 0; i + 1 < path.Count; i++)
+                q.hazards.Add(new OrbPlacement.Hazard(path[i], path[i + 1], crawlerPathClearance));
         }
 
         foreach (var orb in _live.Values)
             if (orb != null && orb != ignore) q.taken.Add(orb.transform.position);
 
         return q;
+    }
+
+    /// <summary>
+    /// How far off an axis the player can be and still touch the orb, from the REAL sizes:
+    /// player radius + the orb at the SMALLEST point of its pulse, minus a little slack. A
+    /// fixed 0.7 was right for the old 0.4-radius player; after the shrink to 0.3 it left orbs
+    /// you could only grab at the top of the pulse.
+    /// </summary>
+    float PickupReach() {
+        float player = 0.4f;
+        var pc = Object.FindFirstObjectByType<PlayerController>();
+        if (pc != null && pc.TryGetComponent(out CircleCollider2D pcol))
+            player = pcol.radius * Mathf.Abs(pc.transform.lossyScale.x);
+
+        float orb = 0.4f;
+        if (orbPrefab != null && orbPrefab.TryGetComponent(out CircleCollider2D ocol))
+            orb = ocol.radius * Mathf.Abs(orbPrefab.transform.localScale.x);
+        orb *= Orb.PulseMin;
+
+        return player + orb - 0.05f;
     }
 
     static bool PathClear(Vector2 a, Vector2 b) {
