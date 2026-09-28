@@ -4,7 +4,8 @@ using UnityEngine.SceneManagement;
 
 namespace Lockdown {
 
-public enum GameState { Playing, Won, Dead }
+/// <summary>Intro = the instruction page is up and the arena is frozen until a key is pressed.</summary>
+public enum GameState { Intro, Playing, Won, Dead }
 
 /// <summary>
 /// Run state machine and difficulty ramp. Single level, no progression.
@@ -47,12 +48,31 @@ public class LevelManager : MonoBehaviour {
     public float TurretFireGap => Mathf.Max(2.5f - 0.2f * _tier, 1.5f);   // floor: the telegraph is 0.5s,
     public float TurretRespawn => Mathf.Max(4.0f - 0.4f * _tier, 2.0f);   // any faster and it glows nonstop
 
+    /// <summary>Test hook: start straight in Playing, no instruction page.</summary>
+    public static bool SkipIntro;
+    // Once per launch. R and restarts reload the scene, and making the player sit through
+    // the rules again after every run would be a chore.
+    static bool _introSeen;
+
     void Awake() {
         I = this;
         Hitstop.Reset();
         Elapsed = 0f;
         _tier = 0;
+        if (SkipIntro || _introSeen) {
+            State = GameState.Playing;
+        } else {
+            State = GameState.Intro;            // Frozen until BeginRun - see IntroScreen
+            gameObject.AddComponent<IntroScreen>();
+        }
+    }
+
+    /// <summary>Called by IntroScreen when the player presses a key.</summary>
+    public void BeginRun() {
+        if (State != GameState.Intro) return;
+        _introSeen = true;
         State = GameState.Playing;
+        OnStateChanged?.Invoke(State);
     }
 
     void OnDestroy() { if (I == this) I = null; }
@@ -62,7 +82,8 @@ public class LevelManager : MonoBehaviour {
 
         // R reloads from any state. You will press this several
         // hundred times while tuning.
-        if (Input.GetKeyDown(KeyCode.R)) { Restart(); return; }
+        // (Not on the instruction page - there, R is just "any key" and starts the run.)
+        if (State != GameState.Intro && Input.GetKeyDown(KeyCode.R)) { Restart(); return; }
 
         // Won and Dead both just hold until the player restarts, with the centred RESTART button
         // or the R key. Restarting on any key would count the mouse click that presses the

@@ -158,6 +158,21 @@ public class WallBounceAndOrbPlacementTests {
     }
 
     [Test]
+    public void ThinStripWithOrbsAlreadyInItStillGetsAVisibleOrb() {
+        // The bug from play: only Up left, so the reachable ground is a thin column above the
+        // player, and two older orbs already sit in it. It used to find nothing and drop the
+        // orb on the player (instantly collected, never seen).
+        var q = Arena(new Vector2(-3.67f, 3.11f), Only(Direction.Up));
+        q.pickupReach = 0.57f;
+        q.taken.Add(new Vector2(-3.8f, 4.7f));
+        q.taken.Add(new Vector2(-3.3f, 5.2f));
+        Assert.IsTrue(OrbPlacement.TryPick(q, null, GridPts, _ => 0, out Vector2 s, out int tier));
+        Assert.GreaterOrEqual(tier, 4, "only possible once orb spacing relaxes");
+        Assert.IsTrue(OrbPlacement.CanReach(q.player, s, q.canMove, q.pickupReach, null), "still reachable");
+        Assert.Greater(Vector2.Distance(s, q.player), q.pickupReach * 2f, "not dropped on the player");
+    }
+
+    [Test]
     public void OrbsKeepApartFromEachOther() {
         var q = Arena(new Vector2(0, 0), Only(Direction.Right));
         q.taken.Add(new Vector2(6, 0));
