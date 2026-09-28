@@ -7,12 +7,28 @@ namespace Lockdown {
 public class PlayerShooting : MonoBehaviour {
     public Bullet bulletPrefab;
     public Transform firePoint;
+    [Tooltip("Seconds between shots. 0.25 = 4 shots/sec.")]
     public float fireRate = 0.25f;
 
     float _next;
 
+    /// <summary>
+    /// The gun is LOCKED at full mobility and unlocks the moment a direction is lost.
+    ///
+    /// It inverts the loop: you open the run unable to fight back at all, so the first
+    /// stretch is pure dodging and the movement mechanic gets taught before the shooting
+    /// one. Getting hit is what arms you.
+    ///
+    /// It also creates the interesting decision on the other side. Collecting every orb
+    /// restores full mobility - and takes the gun away again. Staying one direction down is
+    /// staying armed, so the player has to weigh mobility against firepower every time an
+    /// orb appears, instead of always grabbing it.
+    /// </summary>
+    public bool Armed => DirectionSystem.I != null && DirectionSystem.I.AnyLost();
+
     void Update() {
         if (LevelManager.I != null && LevelManager.I.Frozen) return;
+        if (!Armed) return;
         if (!Input.GetMouseButton(0) || Time.time < _next) return;
         if (bulletPrefab == null) return;
 

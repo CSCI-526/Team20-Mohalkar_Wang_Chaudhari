@@ -60,6 +60,10 @@ public class DirectionSystem : MonoBehaviour {
     }
     public bool AnyActive() { for (int i = 0; i < Dir.Count; i++) if (_active[i]) return true; return false; }
 
+    /// <summary>True once the player has lost at least one direction. Gates firing: the gun
+    /// is what a lost direction buys you (see PlayerShooting).</summary>
+    public bool AnyLost() { for (int i = 0; i < Dir.Count; i++) if (!_active[i]) return true; return false; }
+
     // ---------------------------------------------------------------- quadrant rule
 
     /// <summary>
