@@ -14,7 +14,7 @@ public class DirectionRuleTests {
     [SetUp]    public void Setup()    { _ds = new GameObject("ds").AddComponent<DirectionSystem>(); }
     [TearDown] public void Teardown() { Object.DestroyImmediate(_ds.gameObject); }
 
-    // v1's four-row table must survive as the degenerate cases of the quadrant rule.
+    // The four axis-aligned shots are the degenerate cases of the quadrant rule.
     [TestCase( 1f,  0f, Direction.Left )]   // travels Right -> lose Left
     [TestCase(-1f,  0f, Direction.Right)]   // travels Left  -> lose Right
     [TestCase( 0f,  1f, Direction.Down )]   // travels Up    -> lose Down
@@ -33,7 +33,7 @@ public class DirectionRuleTests {
 
     [Test]
     public void FortyFiveDegreeTieResolvesConsistently() {
-        // The case v1's table had no row for. Which way it breaks doesn't matter;
+        // An exact diagonal has no dominant axis. Which way it breaks doesn't matter;
         // that it breaks the SAME way every time does.
         Direction first = _ds.ResolveLoss(new Vector2(5f, -5f));
         Assert.AreEqual(Direction.Left, first);

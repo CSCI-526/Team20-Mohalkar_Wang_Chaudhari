@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Lockdown {
 
-/// <summary>Plan v2 section 8/9. Mouse aim, independent of movement - you can always shoot
+/// <summary>Mouse aim, independent of movement - you can always shoot
 /// in a direction you can no longer move in.</summary>
 public class PlayerShooting : MonoBehaviour {
     public Bullet bulletPrefab;
@@ -13,16 +13,9 @@ public class PlayerShooting : MonoBehaviour {
     float _next;
 
     /// <summary>
-    /// The gun is LOCKED at full mobility and unlocks the moment a direction is lost.
-    ///
-    /// It inverts the loop: you open the run unable to fight back at all, so the first
-    /// stretch is pure dodging and the movement mechanic gets taught before the shooting
-    /// one. Getting hit is what arms you.
-    ///
-    /// It also creates the interesting decision on the other side. Collecting every orb
-    /// restores full mobility - and takes the gun away again. Staying one direction down is
-    /// staying armed, so the player has to weigh mobility against firepower every time an
-    /// orb appears, instead of always grabbing it.
+    /// The gun is locked at full mobility and unlocks as soon as any direction is lost.
+    /// Collecting every orb restores full mobility and locks it again, so staying one
+    /// direction down keeps the gun armed.
     /// </summary>
     public bool Armed => DirectionSystem.I != null && DirectionSystem.I.AnyLost();
 

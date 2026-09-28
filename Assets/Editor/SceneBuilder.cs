@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace Lockdown.EditorTools {
 
 /// <summary>
-/// Builds Level01 from code (plan v2 section 9/13). Hand-authoring Unity's scene and prefab
+/// Builds Level01 from code. Hand-authoring Unity's scene and prefab
 /// YAML is fragile; generating it is reproducible and runs headlessly.
 /// Re-runnable: nuke the scene, rebuild, save.
 /// </summary>
@@ -28,7 +28,7 @@ public static class SceneBuilder {
 
         BuildCamera();
         BuildWalls();
-        // No pillars: Harrison's level has none, so nothing builds them.
+        // No pillars in this level.
 
         Directory.CreateDirectory(PrefabDir);
         Bullet enemyBullet  = MakeBulletPrefab("EnemyBullet",  true);
@@ -59,8 +59,8 @@ public static class SceneBuilder {
 
     // ------------------------------------------------------------ physics matrix
 
-    /// <summary>Plan v2 section 13. Two cells differ from v1: PlayerBullet x EnemyBullet
-    /// (v1's matrix forbade what section 9 required) and PlayerBullet x Wall (decision C3).</summary>
+    /// <summary>Builds the 2D collision matrix. Player bullets collide with enemy bullets, so they
+    /// can shoot them down, and with walls, so they bounce the way enemy bullets do.</summary>
     static void ConfigurePhysics() {
         int P = L("Player"), E = L("Enemy"), EB = L("EnemyBullet"),
             PB = L("PlayerBullet"), W = L("Wall"), O = L("Orb");
@@ -90,10 +90,9 @@ public static class SceneBuilder {
         go.transform.position = new Vector3(0, 0.7f, -10);
         var cam = go.AddComponent<Camera>();
         cam.orthographic     = true;
-        // Half-height 7.2 against a 6-unit play area. Size 6 framed the PLAY AREA exactly,
-        // which meant the walls - which sit outside it - were entirely off-screen.
-        // Combined with the +0.7 offset: visible y is -6.5 .. 7.9, so the bottom wall clears
-        // the edge by 0.1 and there is a 1.5-unit band above the top wall for the HUD.
+        // The play area is 6 units above and below centre; the camera shows a little more so the
+        // walls are in frame. With the +0.7 offset the visible y range is -6.5 .. 7.9: the bottom
+        // wall clears the edge by 0.1 and a 1.5-unit band above the top wall holds the HUD.
         cam.orthographicSize = 7.2f;
         cam.backgroundColor  = BG;
         cam.clearFlags       = CameraClearFlags.SolidColor;
@@ -106,10 +105,10 @@ public static class SceneBuilder {
     /// (x = +/-10, y = +/-6).
     ///
     /// They OVERLAP at the corners on purpose - four strips meeting at a zero-width seam let a
-    /// shallow-angle bullet slip straight through (plan v2 section 9).
+    /// shallow-angle bullet slip straight through.
     /// </summary>
     static void BuildWalls() {
-        const float T = 0.4f;               // thickness: was 1.0, which read as a slab
+        const float T = 0.4f;               // wall thickness
         const float HX = 10f, HY = 6f;      // play-area half-extents
         var root = new GameObject("Walls").transform;
         Wall(root, "Top",    new Vector2(0,  HY + T/2), new Vector2(2*HX + 2*T, T));
@@ -127,9 +126,9 @@ public static class SceneBuilder {
 
     static PlayerController BuildPlayer(Bullet playerBullet) {
         var go = new GameObject("Player") { layer = L("Player") };
-        go.transform.position = new Vector3(0, 0, 0);   // Harrison: start at the arena centre
-        // Body size. Everything on the player - fins, aim dot, collider - is a child or a
-        // local radius, so they all scale from this one number. Tune here, not in six places.
+        go.transform.position = new Vector3(0, 0, 0);   // start at the arena centre
+        // Body size. The collider radius and the fin offsets scale with it; the fins and the aim
+        // dot keep their own world size, so they do not shrink with the body.
         const float PS = 0.6f;
         go.transform.localScale = Vector3.one * PS;
 
@@ -139,7 +138,7 @@ public static class SceneBuilder {
         sr.sortingOrder = 10;
 
         var rb = go.AddComponent<Rigidbody2D>();
-        rb.bodyType = RigidbodyType2D.Dynamic;     // decision A4 - Kinematic walks through walls
+        rb.bodyType = RigidbodyType2D.Dynamic;     // Dynamic: a Kinematic body would walk through walls
         rb.gravityScale = 0f;                      // Unity's Dynamic default is 1
         rb.freezeRotation = true;
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
@@ -181,11 +180,10 @@ public static class SceneBuilder {
     }
 
     static void BuildTurrets(Bullet enemyBullet) {
-        // Turret body is 0.6 (was 1.0). Positions and firing offsets below are Harrison's.
+        // Turret body size.
         const float TS = 0.6f;
         var root = new GameObject("Turrets").transform;
-        // Harrison's layout: three corners plus a fourth, bottom-right. T4's x is 7.89, not 8 -
-        // that is where he dragged it in the editor, and it is kept as he set it.
+        // Three turrets in the corners plus a fourth at the bottom-right; T4 sits at x = 7.89.
         Vector2[] at  = { new(-8, 5), new(8, 5), new(-8, -5), new(7.89f, -5) };
         // Firing offsets so the four never volley together: T4 first, then T1, T2, T3 at 0.45s
         // steps. The largest must stay under the fire gap (floor 1.5s) or they re-sync.
@@ -368,8 +366,7 @@ public static class SceneBuilder {
         var rt = t.rectTransform;
         rt.anchorMin = rt.anchorMax = anchor;
         // Pivot defaults to centre, but a CORNER-anchored label must pivot on that same
-        // corner. Otherwise half its box hangs past the screen edge and the text crops -
-        // which is exactly what happened to the hearts when they were top-right before.
+        // corner. Otherwise half its box hangs past the screen edge and the text crops.
         rt.pivot = pivot ?? new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = pos;
         rt.sizeDelta = new Vector2(600, 140);

@@ -3,9 +3,9 @@ using UnityEngine;
 namespace Lockdown {
 
 /// <summary>
-/// Plan v2 section 3. Movement with the direction lock, plus the fin visuals.
+/// Movement with the direction lock, plus the fin visuals.
 ///
-/// Rigidbody2D MUST be Dynamic with Gravity Scale 0 (plan v2 section 13). A Kinematic
+/// Rigidbody2D MUST be Dynamic with Gravity Scale 0. A Kinematic
 /// body does not resolve collisions - you walk straight through pillars - and Unity's
 /// Dynamic default is Gravity Scale 1, which slowly drags you to the bottom of the arena.
 /// </summary>
@@ -68,9 +68,9 @@ public class PlayerController : MonoBehaviour {
     /// Subscribes in Start, NOT OnEnable.
     ///
     /// Awake/OnEnable ordering between separate GameObjects is undefined, and the player and
-    /// the Systems object are separate. If the player initialised first, DirectionSystem.I was
-    /// still null, the old OnEnable bailed out silently, and the fins never hid for the entire
-    /// run. Start is guaranteed to run after every Awake, so the singleton always exists.
+    /// the Systems object are separate. If the player initialised first, DirectionSystem.I
+    /// would still be null and an OnEnable subscription would silently do nothing, so the fins
+    /// would never hide. Start runs after every Awake, so the singleton always exists by then.
     /// </summary>
     void Start() {
         if (DirectionSystem.I == null) return;
@@ -130,7 +130,7 @@ public class PlayerController : MonoBehaviour {
             if (!ds.IsActive(Direction.Up)    && input.y > 0) input.y = 0;
         }
 
-        // CRITICAL (plan v2 section 3): without this, diagonals run at 7.07 u/s and
+        // CRITICAL: without this, diagonals run at 7.07 u/s and
         // losing a direction makes you FASTER, inverting the entire mechanic.
         input = Vector2.ClampMagnitude(input, 1f);
 

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Lockdown.EditorTools {
 
 /// <summary>Generates every sprite the game needs as PNGs in Assets/Sprites.
-/// No external art, per the project constraint.</summary>
+/// No external art is used.</summary>
 public static class SpriteFactory {
     const string Dir = "Assets/Sprites";
 

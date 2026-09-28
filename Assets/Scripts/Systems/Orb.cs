@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Lockdown {
 
 /// <summary>
-/// Plan v2 section 5. Touch it to get the direction back; let it run out and the direction
+/// Touch it to get the direction back; let it run out and the direction
 /// is gone (recoverable only via the mercy rule).
 /// The countdown ring is MANDATORY - with no audio it is the only warning before what is
 /// the harshest event in the game.
@@ -50,8 +50,7 @@ public class Orb : MonoBehaviour {
     /// cannot chase it, so you position yourself and intercept it on a pass.
     ///
     /// Both endpoints are chosen by OrbSpawner to sit INSIDE the player's reachable region.
-    /// A patrol that wandered outside it would put the orb somewhere the player can never go,
-    /// which is the exact bug the reachability rewrite existed to kill.
+    /// A patrol that wandered outside it would leave the orb somewhere the player can never go.
     /// </summary>
     public void SetPatrol(Vector2 a, Vector2 b) {
         _a = a; _b = b; _target = b;
@@ -100,8 +99,8 @@ public class Orb : MonoBehaviour {
         Destroy(gameObject);
     }
 
-    /// <summary>Mercy rule sub-rule 2: retired silently, no permanent-loss penalty.
-    /// It has been redeemed.</summary>
+    /// <summary>Retired silently when the mercy rule returns this orb's direction: no
+    /// permanent-loss penalty, since the direction has already been given back.</summary>
     public void RetireSilently() => Destroy(gameObject);
 
     void OnTriggerEnter2D(Collider2D other) {

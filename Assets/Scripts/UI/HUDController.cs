@@ -4,7 +4,7 @@ using UnityEngine.UI;
 namespace Lockdown {
 
 /// <summary>
-/// Plan v2 section 11. Pure iconography, no labels.
+/// Pure iconography, no labels.
 ///
 /// Direction state is NOT shown here - the coloured fins on the ship carry it, and that is
 /// where the player is already looking. Whether a lost direction is recoverable is told by
@@ -18,10 +18,10 @@ public class HUDController : MonoBehaviour {
     /// <summary>
     /// Everything wires up in Start, NOT OnEnable.
     ///
-    /// OnEnable ran before LevelManager.Awake had set its singleton, so the guarded
-    /// subscription silently did nothing and the game-over banner never appeared. The hearts
-    /// failed the same way: PlayerHealth raises its first OnHeartsChanged from Start, so a
-    /// subscriber that arrives later never hears it.
+    /// OnEnable can run before LevelManager.Awake has set its singleton, so a guarded
+    /// subscription there would silently do nothing and the game-over banner would never
+    /// appear. The hearts have the same problem: PlayerHealth raises its first OnHeartsChanged
+    /// from Start, so a subscriber that arrives later never hears it.
     ///
     /// Start is guaranteed to run after every Awake, and the current values are PULLED here
     /// rather than waiting for an event that may already have been raised.
@@ -68,7 +68,7 @@ public class HUDController : MonoBehaviour {
         // Dim the arena behind the result so the banner and button read as an overlay
         // rather than as text floating over live gameplay.
         if (gameOverOverlay != null) gameOverOverlay.gameObject.SetActive(over);
-        // The run no longer restarts itself - the player decides when, via this button.
+        // The run does not restart itself; the player decides when, via this button.
         if (restartButton != null) restartButton.gameObject.SetActive(over);
     }
 }

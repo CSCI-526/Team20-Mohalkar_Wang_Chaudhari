@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Lockdown {
 
 /// <summary>
-/// Plan v2 section 5. One orb per lost direction, max 4.
+/// One orb per lost direction, max 4.
 ///
 /// Every orb must be reachable with the directions the player has left (OrbPlacement).
 /// When a new loss strands an orb that was fine when it spawned, that orb is moved to a
@@ -93,8 +93,8 @@ public class OrbSpawner : MonoBehaviour {
     /// (OrbPlacement.CanReach), be inside the arena and clear of walls. The reachable set is
     /// convex along an axis, so if both ends are reachable so is everything between them.
     /// The path is shrunk symmetrically until it fits and collapses to a stationary orb if it
-    /// cannot - a patrol that wandered out of reach would recreate the very bug the
-    /// reachability work exists to prevent.
+    /// cannot - a patrol that wandered out of reach would leave the orb where the player
+    /// cannot follow.
     /// </summary>
     void BuildPatrol(Orb orb, Vector2 centre) {
         Vector2 axis = (orb.Dir == Direction.Left || orb.Dir == Direction.Right)
@@ -184,7 +184,7 @@ public class OrbSpawner : MonoBehaviour {
     }
 
     /// <summary>
-    /// The directions to plan around. With all four gone the mercy rule hands one back within
+    /// The directions to place the orb for. With all four gone the mercy rule hands one back within
     /// two seconds, so the orb is placed for THAT direction rather than for nothing at all.
     /// </summary>
     static bool[] MovableDirections() {

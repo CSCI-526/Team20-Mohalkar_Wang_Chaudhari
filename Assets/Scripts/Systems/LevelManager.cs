@@ -7,8 +7,8 @@ namespace Lockdown {
 public enum GameState { Playing, Won, Dead }
 
 /// <summary>
-/// Plan v2 section 10 (state machine) and section 2 (difficulty ramp).
-/// Single level, no progression. Lives on the persistent Systems object.
+/// Run state machine and difficulty ramp. Single level, no progression.
+/// Lives on the persistent Systems object.
 /// </summary>
 public class LevelManager : MonoBehaviour {
     public static LevelManager I { get; private set; }
@@ -16,7 +16,7 @@ public class LevelManager : MonoBehaviour {
     [Header("Run")]
     public float runDuration = 60f;
 
-    [Header("Difficulty ramp (plan v2 section 2)")]
+    [Header("Difficulty ramp")]
     public float tierLength = 10f;
     /// <summary>When Remaining hits this, the late center-cross crawlers spawn.</summary>
     public float latePhaseLead = 20f;
@@ -24,7 +24,7 @@ public class LevelManager : MonoBehaviour {
     public GameState State { get; private set; } = GameState.Playing;
 
     /// <summary>UNSCALED, so hitstop frames don't quietly extend the round
-    /// (plan v2 section 12).</summary>
+    ///.</summary>
     public float Elapsed   { get; private set; }
     public float Remaining => Mathf.Max(0f, runDuration - Elapsed);
 
@@ -37,15 +37,14 @@ public class LevelManager : MonoBehaviour {
     public event Action<int> OnTierChanged;
 
     int _tier = 0;
-    bool _lateCrawlersSpawned;   // Harrison's: late-phase crawlers spawn once
+    bool _lateCrawlersSpawned;   // late-phase crawlers spawn once
 
     // ------------------------------------------------------------------ the ramp
-    // Six tiers over 60s. This is the only escalation in the game - in v1 nothing changed
-    // between second 5 and second 55 and the 60-second arc table was aspirational.
+    // Six tiers over 60s: the only escalation in the game.
 
     public int Tier => _tier;
-    public float CrawlerSpeed  => Mathf.Min(1.5f + 0.5f * _tier, 4.0f);   // -0.5 vs v1; capped under player's 5.0
-    public float TurretFireGap => Mathf.Max(2.5f - 0.2f * _tier, 1.5f);   // +0.5s vs v1; floor: telegraph is 0.5s,
+    public float CrawlerSpeed  => Mathf.Min(1.5f + 0.5f * _tier, 4.0f);   // capped under the player's speed of 5.0
+    public float TurretFireGap => Mathf.Max(2.5f - 0.2f * _tier, 1.5f);   // floor: the telegraph is 0.5s,
     public float TurretRespawn => Mathf.Max(4.0f - 0.4f * _tier, 2.0f);   // any faster and it glows nonstop
 
     void Awake() {
@@ -61,14 +60,13 @@ public class LevelManager : MonoBehaviour {
     void Update() {
         Hitstop.Tick();   // the single place timeScale is restored
 
-        // Plan v2 section 10, rule 3: R reloads from any state. You will press this several
+        // R reloads from any state. You will press this several
         // hundred times while tuning.
         if (Input.GetKeyDown(KeyCode.R)) { Restart(); return; }
 
-        // Won and Dead both just hold. Restarting is the player's call now, via the centred
-        // RESTART button - previously a win restarted on ANY key (including the mouse click
-        // that would press that button) and a death restarted itself on a timer, neither of
-        // which leaves room for a button.
+        // Won and Dead both just hold until the player restarts, with the centred RESTART button
+        // or the R key. Restarting on any key would count the mouse click that presses the
+        // button, and an automatic restart would leave no time to use it.
         if (State == GameState.Playing) TickPlaying();
     }
 
@@ -81,7 +79,7 @@ public class LevelManager : MonoBehaviour {
         // Late phase: one extra vertical crawler on the midline.
         if (!_lateCrawlersSpawned && Remaining <= latePhaseLead) SpawnLateCrawlers();
 
-        // Plan v2 section 10, rule 2: the WIN CHECK RUNS FIRST. Taking the 5th hit at
+        // The WIN CHECK RUNS FIRST. Taking the 5th hit at
         // t=59.98 makes both conditions true on the same frame, and being killed by
         // evaluation order is the worst possible way to lose a run you survived.
         if (Elapsed >= runDuration) Win();
@@ -118,7 +116,7 @@ public class LevelManager : MonoBehaviour {
         if (State != GameState.Playing) return;
         State = GameState.Won;
 
-        // Plan v2 section 10, rule 1: bullets are mid-flight when the timer hits 0.
+        // Bullets are mid-flight when the timer hits 0.
         // Without this, your best run ends with "YOU WIN" on screen and a death
         // animation playing underneath it.
         foreach (Bullet b in FindObjectsByType<Bullet>(FindObjectsSortMode.None))
