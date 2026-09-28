@@ -18,7 +18,6 @@ public static class SceneBuilder {
 
     static readonly Color BG      = new(0.067f, 0.067f, 0.067f);
     static readonly Color WallCol = new(0.27f, 0.27f, 0.27f);
-    static readonly Color PillarC = new(0.33f, 0.33f, 0.33f);
 
     [MenuItem("LOCKDOWN/Rebuild Level01")]
     public static void Build() {
@@ -29,7 +28,7 @@ public static class SceneBuilder {
 
         BuildCamera();
         BuildWalls();
-        BuildPillars();
+        // No pillars: Harrison's level has none, so nothing builds them.
 
         Directory.CreateDirectory(PrefabDir);
         Bullet enemyBullet  = MakeBulletPrefab("EnemyBullet",  true);
@@ -126,20 +125,9 @@ public static class SceneBuilder {
         go.AddComponent<BoxCollider2D>();
     }
 
-    static void BuildPillars() {
-        var root = new GameObject("Pillars").transform;
-        Vector2[] at = { new(-5, 2), new(5, 2), new(-5, -2), new(5, -2) };
-        for (int i = 0; i < at.Length; i++) {
-            var go = Quad($"P{i + 1}", at[i], Vector2.one, PillarC, 4);
-            go.transform.SetParent(root);
-            go.layer = L("Wall");
-            go.AddComponent<BoxCollider2D>();
-        }
-    }
-
     static PlayerController BuildPlayer(Bullet playerBullet) {
         var go = new GameObject("Player") { layer = L("Player") };
-        go.transform.position = new Vector3(0, 4, 0);
+        go.transform.position = new Vector3(0, 0, 0);   // Harrison: start at the arena centre
         // Body size. Everything on the player - fins, aim dot, collider - is a child or a
         // local radius, so they all scale from this one number. Tune here, not in six places.
         const float PS = 0.6f;
@@ -194,7 +182,12 @@ public static class SceneBuilder {
 
     static void BuildTurrets(Bullet enemyBullet) {
         var root = new GameObject("Turrets").transform;
-        Vector2[] at = { new(-8, 5), new(8, 5), new(0, -5) };
+        // Harrison's layout: three corners plus a fourth, bottom-right. T4's x is 7.89, not 8 -
+        // that is where he dragged it in the editor, and it is kept as he set it.
+        Vector2[] at  = { new(-8, 5), new(8, 5), new(-8, -5), new(7.89f, -5) };
+        // Firing offsets so the four never volley together: T4 first, then T1, T2, T3 at 0.45s
+        // steps. The largest must stay under the fire gap (floor 1.5s) or they re-sync.
+        float[] phase = { 0.45f, 0.9f, 1.35f, 0f };
         for (int i = 0; i < at.Length; i++) {
             var go = Quad($"T{i + 1}", at[i], Vector2.one, new Color(1f, 0.33f, 0.2f), 6);
             go.transform.SetParent(root);
@@ -220,7 +213,7 @@ public static class SceneBuilder {
             t.barrelTip = tip.transform;
             t.core      = core.GetComponent<SpriteRenderer>();
             t.body      = go.GetComponent<SpriteRenderer>();
-            t.firePhase = i * 0.45f;   // stagger so turrets do not volley together
+            t.firePhase = phase[i];
         }
     }
 
