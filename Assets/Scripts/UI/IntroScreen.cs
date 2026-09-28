@@ -75,7 +75,7 @@ public class IntroScreen : MonoBehaviour {
         bg.anchorMin = Vector2.zero; bg.anchorMax = Vector2.one;
         bg.offsetMin = bg.offsetMax = Vector2.zero;
 
-        Label(root, "LOCKDOWN", 120, new Vector2(0, 410), new Vector2(1400, 140), Ink, FontStyle.Bold);
+        Label(root, "Deadlock: Don’t Lose Your Move.", 88, new Vector2(0, 405), new Vector2(1800, 120), Ink, FontStyle.Bold);
         Label(root, "Get hit, lose a direction. Grab the orb to get it back.", 32,
               new Vector2(0, 318), new Vector2(1600, 50), Muted);
 
