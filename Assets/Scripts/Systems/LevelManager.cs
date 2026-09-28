@@ -78,7 +78,7 @@ public class LevelManager : MonoBehaviour {
         int t = Mathf.Clamp(Mathf.FloorToInt(Elapsed / tierLength), 0, 5);
         if (t != _tier) { _tier = t; OnTierChanged?.Invoke(_tier); }
 
-        // Late phase: center-cross pair (vertical midline + horizontal midline).
+        // Late phase: one extra vertical crawler on the midline.
         if (!_lateCrawlersSpawned && Remaining <= latePhaseLead) SpawnLateCrawlers();
 
         // Plan v2 section 10, rule 2: the WIN CHECK RUNS FIRST. Taking the 5th hit at
@@ -87,7 +87,7 @@ public class LevelManager : MonoBehaviour {
         if (Elapsed >= runDuration) Win();
     }
 
-    // Last 20s: spawn two more crawlers at the center (one up/down, one left/right)
+    // Last 20s: spawn one extra crawler (vertical midline)
     void SpawnLateCrawlers() {
         _lateCrawlersSpawned = true;
 
@@ -98,7 +98,6 @@ public class LevelManager : MonoBehaviour {
         if (proto == null) return;
 
         MakeCrawler(proto, Crawler.PathMode.Vertical);
-        MakeCrawler(proto, Crawler.PathMode.Horizontal);
     }
 
     void MakeCrawler(Crawler proto, Crawler.PathMode mode) {
@@ -108,17 +107,11 @@ public class LevelManager : MonoBehaviour {
         Crawler c = go.GetComponent<Crawler>();
         c.pathMode = mode;
         c.laneX = 0f;
-        c.laneY = 0f;
         c.topY = 5f;
         c.bottomY = -5f;
-        c.leftX = -9f;
-        c.rightX = 9f;
 
-        // Vertical starts at the top; horizontal starts at the left
-        if (mode == Crawler.PathMode.Vertical)
-            go.transform.position = new Vector3(0f, 5f, 0f);
-        else
-            go.transform.position = new Vector3(-9f, 0f, 0f);
+        // Vertical starts at the top
+        go.transform.position = new Vector3(0f, 5f, 0f);
     }
 
     void Win() {
