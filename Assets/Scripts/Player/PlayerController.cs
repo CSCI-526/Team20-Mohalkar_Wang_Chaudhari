@@ -30,8 +30,8 @@ public class PlayerController : MonoBehaviour {
     public float minBounceSpeed = 1f;
     [Tooltip("Seconds after a bounce ends before the walls can bounce again.")]
     public float bounceCooldown = 0.1f;
-    [Tooltip("A bounce never carries you closer than this to the crawler's patrol line - " +
-             "being thrown into an instant kill you couldn't steer out of isn't fun.")]
+    [Tooltip("A bounce never carries you closer than this to a crawler - being thrown " +
+             "into an instant kill isn't fun.")]
     public float crawlerClearance = 1.5f;
 
     /// <summary>Test hook. When set, replaces keyboard movement input.</summary>
@@ -42,7 +42,6 @@ public class PlayerController : MonoBehaviour {
     // Keys already held when the bounce started. Holding them doesn't cancel the bounce;
     // pressing anything else does - see PressedNewKey.
     Vector2 _heldAtBounce;
-    Crawler _crawler;
 
     // Per-axis bounce: +1/-1 = being carried that way along x (or y), 0 = not bouncing on
     // that axis. Per axis so a corner hit bounces on both at once.
@@ -205,9 +204,14 @@ public class PlayerController : MonoBehaviour {
         Vector2 pos = _rb.position;
         Vector2 target = new(_bx != 0 ? arenaCentre.x : pos.x, _by != 0 ? arenaCentre.y : pos.y);
 
-        if (_crawler == null) _crawler = FindFirstObjectByType<Crawler>();
-        if (_crawler != null && _crawler.isActiveAndEnabled) {
-            target = StopShortOf(pos, target, _crawler.PathStart(), _crawler.PathEnd(), crawlerClearance);
+        // Every crawler's CURRENT position, re-checked each step as they move. Not their
+        // paths: the S-curve covers most of the arena (and its start-to-end line runs flat
+        // across the middle), so guarding the path stopped most bounces almost instantly.
+        // Late-phase crawlers appear mid-run, hence no caching.
+        foreach (var cr in FindObjectsByType<Crawler>(FindObjectsSortMode.None)) {
+            if (!cr.isActiveAndEnabled) continue;
+            Vector2 at = cr.transform.position;
+            target = StopShortOf(pos, target, at, at, crawlerClearance);
         }
 
         if (_bx != 0) {

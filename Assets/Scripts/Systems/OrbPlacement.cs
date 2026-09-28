@@ -47,9 +47,14 @@ public static class OrbPlacement {
     /// Tier 1: drop the distance band (keep half of minTravel so it isn't a free pickup).
     /// Tier 2: also ignore hazards.
     /// Tier 3: also drop the edge margin and keep only "not on top of the player".
-    /// Reachability, solidity and orb spacing hold at every tier.
+    /// Tier 4: also let orbs sit closer together (60% of the usual spacing - still apart).
+    /// Tier 5: also let orbs touch.
+    /// Reachability and solidity hold at every tier. Tiers 4-5 exist for the late game: with
+    /// three keys gone the reachable ground is a thin strip, older orbs already sit in it, and
+    /// without them there was no spot left - the orb fell back onto the player and was
+    /// collected the instant it spawned, so a lost key showed no orb at all.
     /// </summary>
-    public const int Tiers = 4;
+    public const int Tiers = 6;
 
     /// <summary>Which keys walking from here to there takes. None on an axis inside pickup reach.</summary>
     public static void Needed(Vector2 delta, float reach, out Direction h, out Direction v) {
@@ -83,14 +88,15 @@ public static class OrbPlacement {
         float d = Vector2.Distance(c, q.player);
         if (tier == 0 && (d < q.minTravel || d > q.maxTravel)) return false;
         if (tier is 1 or 2 && d < q.minTravel * 0.5f) return false;
-        if (tier == 3 && d < q.pickupReach * 2f) return false;
+        if (tier >= 3 && d < q.pickupReach * 2f) return false;
 
         if (tier < 2)
             foreach (var hz in q.hazards)
                 if (DistToSegment(c, hz.a, hz.b) < hz.radius) return false;
 
+        float spacing = tier < 4 ? q.takenSpacing : tier == 4 ? q.takenSpacing * 0.6f : 0f;
         foreach (var t in q.taken)
-            if (Vector2.Distance(c, t) < q.takenSpacing) return false;
+            if (Vector2.Distance(c, t) < spacing) return false;
 
         // Physics last - it's the only expensive check.
         if (q.solidAt != null && q.solidAt(c)) return false;

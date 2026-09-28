@@ -88,6 +88,17 @@ public class Crawler : MonoBehaviour {
         return new Vector2(halfWidth, SineY(halfWidth));
     }
 
+    /// <summary>The whole path as points (straight lane: 2; S-curve: sampled along the
+    /// sine). OrbSpawner keeps orbs off it - PathStart/PathEnd alone describe the S-curve as
+    /// a flat line across the middle, when it really swings +/- amplitude.</summary>
+    public void SamplePath(System.Collections.Generic.List<Vector2> into, int samples = 36) {
+        if (pathMode != PathMode.SCurve) { into.Add(PathStart()); into.Add(PathEnd()); return; }
+        for (int i = 0; i <= samples; i++) {
+            float x = Mathf.Lerp(-halfWidth, halfWidth, i / (float)samples);
+            into.Add(new Vector2(x, SineY(x)));
+        }
+    }
+
     // Point the triangle along travel (sprite apex is up, so subtract 90)
     void Face(float dirX, float dirY) {
         float angle = Mathf.Atan2(dirY, dirX) * Mathf.Rad2Deg - 90f;
